@@ -159,9 +159,8 @@ UINT64 __cdecl Render(void *This, UINT64 arg)
 
 // Address copied out of SKSE
 //RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2EF0);
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B34A0);
-RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0);
-
+//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005BA930);
+RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005BAB10);
 
 
 

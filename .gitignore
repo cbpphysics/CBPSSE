@@ -262,3 +262,4 @@ __pycache__/
 
 # omit skse64
 skse64/
+/skse64_se
