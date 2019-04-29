@@ -46,10 +46,10 @@ void Thing::updateConfig(configEntry_t & centry) {
 	linearZ = centry["linearZ"];
 	rotational = centry["rotational"];
 	// Optional entries for backwards compatability 
-	if (centry.find("timeStep") != centry.end())
-		timeStep = centry["timeStep"];
+	if (centry.find("timeStepMagnitude") != centry.end())
+		timeStepMagnitude = centry["timeStepMagnitude"];
 	else 
-		timeStep = 1.0f;
+		timeStepMagnitude = 1.0f;
 	gravityBias = centry["gravityBias"];
 	gravityCorrection = centry["gravityCorrection"];
 	cogOffset = centry["cogOffset"];
@@ -121,6 +121,8 @@ void Thing::update(Actor *actor) {
 		NiPoint3 force = (diff * stiffness) + (diff2 * stiffness2) - NiPoint3(0, 0, gravityBias);
 		//showPos(diff);
 		//showPos(force);
+
+		float timeStep = (float)deltaT / CLOCKS_PER_SEC * timeStepMagnitude;
 
 		do {
 			// Assume mass is 1, so Accelleration is Force, can vary mass by changinf force

@@ -25,7 +25,7 @@ public:
 	float linearY = 0;
 	float linearZ = 0;
 	float rotational = 0.1;
-	float timeStep = 1.0f;
+	float timeStepMagnitude = 1.0f;
 
 	Thing(NiAVObject *obj, BSFixedString &name);
 	~Thing();
