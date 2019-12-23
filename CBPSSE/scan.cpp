@@ -26,21 +26,21 @@
 #include "Thing.h"
 #include "config.h"
 #include "SimObj.h"
-#include "skse64/GameRTTI.h"
-#include "skse64/GameForms.h"
-#include "skse64/GameReferences.h"
-#include "skse64/NiTypes.h"
-#include "skse64/NiNodes.h"
-#include "skse64/NiGeometry.h"
-#include "skse64/GameThreads.h"
-#include "skse64/PluginAPI.h"
-#include "skse64/GameStreams.h"
+#include "f4se/GameRTTI.h"
+#include "f4se/GameForms.h"
+#include "f4se/GameReferences.h"
+#include "f4se/NiTypes.h"
+#include "f4se/NiNodes.h"
+#include "f4se/BSGeometry.h"
+#include "f4se/GameThreads.h"
+#include "f4se/PluginAPI.h"
+#include "f4se/GameStreams.h"
 
 
 #pragma warning(disable : 4996)
 
 
-extern SKSETaskInterface *g_task;
+extern F4SETaskInterface *g_task;
 
 
 //void UpdateWorldDataToChild(NiAVObject)
@@ -83,13 +83,13 @@ std::string spaces(int n) {
 bool printStuff(NiAVObject *avObj, int depth) {
 	std::string sss = spaces(depth);
 	const char *ss = sss.c_str();
-	logger.info("%savObj Name = %s, RTTI = %s\n", ss, avObj->m_name, avObj->GetRTTI()->name);
+	//logger.info("%savObj Name = %s, RTTI = %s\n", ss, avObj->m_name, avObj->GetRTTI()->name);
 
-	NiNode *node = avObj->GetAsNiNode();
-	if (node) {
-		logger.info("%snode %s, RTTI %s\n", ss, node->m_name, node->GetRTTI()->name);
-	}
-	return false;
+	//NiNode *node = avObj->GetAsNiNode();
+	//if (node) {
+	//	logger.info("%snode %s, RTTI %s\n", ss, node->m_name, node->GetRTTI()->name);
+	//}
+	//return false;
 }
 
 
@@ -133,7 +133,7 @@ void updateActors() {
 
 	//logger.error("scan Cell\n");
 	auto player = DYNAMIC_CAST(LookupFormByID(0x14), TESForm, Actor);
-	if (!player || !player->loadedState) goto FAILED;
+	if (!player || !player->unkF0) goto FAILED;
 
 	auto cell = player->parentCell;
 	if (!cell) goto FAILED;
@@ -143,14 +143,16 @@ void updateActors() {
 		curCell = cell;
 		actors.clear();
 	} else {
-		for (int i = 0; i < cell->refData.maxSize; i++) {
-			auto ref = cell->refData.refArray[i];
-			if (ref.unk08 != NULL && ref.ref) {
-				auto actor = DYNAMIC_CAST(ref.ref, TESObjectREFR, Actor);
-				if (actor && actor->loadedState) {
+		// Attempt to get cell's objects
+		for (int i = 0; i < cell->objectList.count; i++) {
+			auto ref = cell->objectList[i];
+			if (ref) {
+				// Attempt to get actors
+				auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
+				if (actor && actor->unkF0) {
 					auto soIt = actors.find(actor->formID);
-					if (soIt == actors.end()) {
-						//logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
+					if (soIt == actors.end() && actor->formID == 0x14) {
+						logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
 						auto obj = SimObj(actor, config);
 						if (obj.actorValid(actor)) {
 							actors.emplace(actor->formID, obj);
@@ -162,6 +164,25 @@ void updateActors() {
 				}
 			}
 		}
+		//for (int i = 0; i < cell->refData.maxSize; i++) {
+		//	auto ref = cell->refData.refArray[i];
+		//	if (ref.unk08 != NULL && ref.ref) {
+		//		auto actor = DYNAMIC_CAST(ref.ref, TESObjectREFR, Actor);
+		//		if (actor && actor->unkF0) {
+		//			auto soIt = actors.find(actor->formID);
+		//			if (soIt == actors.end()) {
+		//				//logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
+		//				auto obj = SimObj(actor, config);
+		//				if (obj.actorValid(actor)) {
+		//					actors.emplace(actor->formID, obj);
+		//					actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
+		//				}
+		//			} else if (soIt->second.actorValid(actor)) {
+		//				actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
+		//			}
+		//		}
+		//	}
+		//}
 	}
 
 	//static bool done = false;
@@ -186,7 +207,7 @@ void updateActors() {
 			a.second.updateConfig(config);
 		}
 	}
-	//logger.error("Updating %d entites\n", actorEntries.size());
+	logger.error("Updating %d entites\n", actorEntries.size());
 	for (auto &a : actorEntries) {
 		auto objIt = actors.find(a.id);
 		if (objIt == actors.end()) {
@@ -211,7 +232,7 @@ FAILED:
 }
 
 
-class ScanDelegate : public TaskDelegate {
+class ScanDelegate : public ITaskDelegate {
 public:
 	virtual void Run() {
 		updateActors();

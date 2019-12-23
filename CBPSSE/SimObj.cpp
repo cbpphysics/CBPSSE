@@ -1,29 +1,29 @@
 #include "SimObj.h"
-#include "skse64/NiNodes.h"
-#include "skse64/GameForms.h"
-#include "skse64/GameRTTI.h"
+#include "f4se/NiNodes.h"
+#include "f4se/GameForms.h"
+#include "f4se/GameRTTI.h"
 #include "log.h"
 
 
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
 
-const char *leftBreastName = "NPC L Breast";
-const char *rightBreastName = "NPC R Breast";
-const char *leftButtName = "NPC L Butt";
-const char *rightButtName = "NPC R Butt";
+const char *leftBreastName = "Breast_CBP_R_02";
+const char *rightBreastName = "Breast_CBP_L_02";
+const char *leftButtName = "Butt_CBP_R_01";
+const char *rightButtName = "Butt_CBP_L_01";
 const char *bellyName = "HDT Belly";
 
 const char *scrotumName = "NPC GenitalsScrotum [GenScrot]";
-const char *leftScrotumName = "NPC L GenitalsScrotum [LGenScrot]";
-const char *rightScrotumName = "NPC R GenitalsScrotum [RGenScrot]";
+const char *leftScrotumName = "Penis_Balls_CBP_01";
+const char *rightScrotumName = "Penis_Balls_CBP_02";
 
 std::unordered_map<const char *, std::string> configMap = {
 	{leftBreastName, "Breast"}, {rightBreastName, "Breast"},
 	{leftButtName, "Butt"}, {rightButtName, "Butt"},
-	{bellyName, "Belly"} };
+	/*{bellyName, "Belly"}*/ };
 
 
-std::vector<const char *> femaleBones = { leftBreastName, rightBreastName, leftButtName, rightButtName, bellyName };
+std::vector<const char *> femaleBones = { leftBreastName, rightBreastName, leftButtName, rightButtName, /*bellyName*/ };
 
 SimObj::SimObj(Actor *actor, config_t &config)
 	: things(5){
@@ -36,20 +36,21 @@ SimObj::~SimObj() {
 
 bool SimObj::bind(Actor *actor, std::vector<const char *>& boneNames, config_t &config)
 {
-	//logger.error("bind\n");
+	logger.error("bind\n");
 
 
-	auto loadedState = actor->loadedState;
-	if (loadedState && loadedState->node) {
+	auto loadedData = actor->unkF0;
+	if (loadedData && loadedData->rootNode) {
 		bound = true;
 
 		things.clear();
 		for (const char * &b : boneNames) {
 			BSFixedString cs(b);
-			auto bone = loadedState->node->GetObjectByName(&cs.data);
+			auto bone = loadedData->rootNode->GetObjectByName(&cs);
 			if (!bone) {
-				logger.info("Failed to find Bone %s for actor %d\n", b, actor->formID);
+				logger.info("Failed to find Bone %s for actor %08x\n", b, actor->formID);
 			} else {
+				logger.info("Doing Bone %s for actor %08x\n", b, actor->formID);
 				things.emplace(b, Thing(bone, cs));
 			}
 		}
@@ -60,9 +61,9 @@ bool SimObj::bind(Actor *actor, std::vector<const char *>& boneNames, config_t &
 }
 
 bool SimObj::actorValid(Actor *actor) {
-	if (actor->flags & TESForm::kFlagIsDeleted)
+	if (actor->flags & TESForm::kFlag_IsDeleted)
 		return false;
-	if (actor && actor->loadedState && actor->loadedState->node)
+	if (actor && actor->unkF0 && actor->unkF0->rootNode)
 		return true;
 	return false;
 }
@@ -71,11 +72,11 @@ bool SimObj::actorValid(Actor *actor) {
 void SimObj::update(Actor *actor) {
 	if (!bound)
 		return;
-	//logger.error("update\n");
+	logger.error("update\n");
 	for (auto &t : things) {
 		t.second.update(actor);
 	}
-	//logger.error("end SimObj update\n");
+	logger.error("end SimObj update\n");
 }
 
 bool SimObj::updateConfig(config_t & config) {

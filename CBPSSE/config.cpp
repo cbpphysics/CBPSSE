@@ -16,8 +16,8 @@ config_t config;
 
 void loadConfig() {
 	char buffer[1024];
-	//logger.info("loadConfig\n");
-	FILE *fh = fopen("Data\\SKSE\\Plugins\\CBPConfig.txt", "r");
+	logger.info("loadConfig\n");
+	FILE *fh = fopen("Data\\F4SE\\Plugins\\CBPConfig.txt", "r");
 	if (!fh) {
 		logger.error("Failed to open config file CBPConfig.txt\n");
 		//Console_Print("Failed to open config file CBPConfig.txt");

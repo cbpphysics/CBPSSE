@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 #include <vector>
-#include "skse64/GameReferences.h"
+#include "f4se/GameReferences.h"
 #include "Thing.h"
 #include "config.h"
 

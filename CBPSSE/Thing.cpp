@@ -1,14 +1,19 @@
 #include "Thing.h"
 #include "log.h"
-#include "skse64\NiNodes.h"
+#include "f4se\NiNodes.h"
 #include <time.h>
 
-Thing::Thing(NiAVObject *obj, BSFixedString &name)
+#define PI 3.14159265
+#define DEBUG 0
+
+Thing::Thing(NiAVObject* obj, BSFixedString& name)
 	: boneName(name)
 	, velocity(NiPoint3(0, 0, 0))
 {
 	oldWorldPos = obj->m_worldTransform.pos;
+
 	time = clock();
+	firstRun = true;
 }
 
 Thing::~Thing() {
@@ -18,10 +23,10 @@ void showPos(NiPoint3 &p) {
 	logger.info("%8.2f %8.2f %8.2f\n", p.x, p.y, p.z);
 }
 
-void showRot(NiMatrix33 &r) {
-	logger.info("%8.2f %8.2f %8.2f\n", r.data[0][0], r.data[0][1], r.data[0][2]);
-	logger.info("%8.2f %8.2f %8.2f\n", r.data[1][0], r.data[1][1], r.data[1][2]);
-	logger.info("%8.2f %8.2f %8.2f\n", r.data[2][0], r.data[2][1], r.data[2][2]);
+void showRot(NiMatrix43 &r) {
+	logger.info("%8.2f %8.2f %8.2f %8.2f\n", r.data[0][0], r.data[0][1], r.data[0][2], r.data[0][3]);
+	logger.info("%8.2f %8.2f %8.2f %8.2f\n", r.data[1][0], r.data[1][1], r.data[1][2], r.data[1][3]);
+	logger.info("%8.2f %8.2f %8.2f %8.2f\n", r.data[2][0], r.data[2][1], r.data[2][2], r.data[2][3]);
 }
 
 
@@ -89,24 +94,89 @@ void Thing::update(Actor *actor) {
 	if (deltaT > 64) deltaT = 64;
 	if (deltaT < 8) deltaT = 8;
 
-	auto loadedState = actor->loadedState;
-	if (!loadedState || !loadedState->node) {
+	auto loadedState = actor->unkF0;
+	if (!loadedState || !loadedState->rootNode) {
 		logger.error("No loaded state for actor %08x\n", actor->formID);
 		return;
 	}
-	auto obj = loadedState->node->GetObjectByName(&boneName.data);
-	if (!obj)
-		return;
+	auto obj = loadedState->rootNode->GetObjectByName(&boneName);
 
-	//Offset to move Center of Mass make rotaional motion more significant  
-	NiPoint3 target = obj->m_parent->m_worldTransform * NiPoint3(0, cogOffset, 0);
-	//logger.error("Target: ");
-	//showPos(target);
+	if (!obj) {
+		logger.error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
+		return;
+	}
+
+	if (!obj->m_parent) {
+		logger.error("Couldn't get bone %s parent for actor %08x\n", boneName.c_str() , actor->formID);
+		return;
+	}
+
+#if DEBUG
+	auto scene_obj = obj;
+	while (scene_obj->m_parent && scene_obj->m_name != "skeleton.nif")
+	{
+		logger.info(scene_obj->m_name);
+		logger.info("\n---\n");
+		showPos(scene_obj->m_localTransform.pos);
+		showPos(scene_obj->m_worldTransform.pos);
+		logger.info("---\n");
+		showRot(scene_obj->m_localTransform.rot);
+		showRot(scene_obj->m_worldTransform.rot);
+		logger.info("---\n");
+		if (scene_obj->m_parent) {
+			showPos((scene_obj->m_worldTransform.rot * scene_obj->m_localTransform.pos) + scene_obj->m_parent->m_worldTransform.pos); // m_worldTransform.pos
+			showRot(scene_obj->m_localTransform.rot * scene_obj->m_parent->m_worldTransform.rot); // m_worldTransform.rot
+		}
+		scene_obj = scene_obj->m_parent;	
+	}
+#endif
+
+	if (firstRun) {
+		orig_local_pos = obj->m_localTransform.pos;
+		orig_local_rot = obj->m_localTransform.rot;
+	}
+
+#if DEBUG
+	logger.error("bone %s for actor %08x\n", boneName.c_str(), actor->formID);
+	//showPos(obj->m_parent->m_worldTransform.pos + obj->m_localTransform.pos);
+	showPos((obj->m_localTransform.rot.Transpose() * obj->m_localTransform.pos));
+#endif
+
+	// Offset to move Center of Mass make rotaional motion more significant
+	// This target is 
+	NiPoint3 target;
+
+	// TODO: left and right with same parents transforms should be different... example: the butt
+	// Relative Left
+	//if (obj->m_localTransform.pos.x < 0.0) {
+		target = (obj->m_worldTransform.rot * NiPoint3(0, cogOffset, 0)) + obj->m_worldTransform.pos;
+	//}
+	//// Relative Right
+	//else {
+	//	target = (obj->m_worldTransform.rot *
+	//		(obj->m_localTransform.pos + NiPoint3(0, 0, 0))) + obj->m_parent->m_worldTransform.pos;
+	//}
+
+#if DEBUG
+	logger.error("World Position: ");
+	showPos(obj->m_worldTransform.pos);
+	logger.error("Target: ");
+	showPos(target);
+#endif
+
+	// diff is Difference in position between old and new world position
 	NiPoint3 diff = target - oldWorldPos;
-	diff += obj->m_parent->m_worldTransform.rot * NiPoint3(0, 0, gravityCorrection);
+
+	// move up in rotated angle for gravity correction
+	diff += obj->m_worldTransform.rot * NiPoint3(0, 0, gravityCorrection);
+
+#if DEBUG
+	logger.error("Diff after gravity correction: ");
+	showPos(diff);
+#endif
 
 	if (fabs(diff.x) > 100 || fabs(diff.y) > 100 || fabs(diff.z) > 100) {
-		//logger.error("transform reset\n");
+		logger.error("transform reset\n");
 		obj->m_localTransform.pos = NiPoint3(0, 0, 0);
 		oldWorldPos = target;
 		velocity = NiPoint3(0, 0, 0);
@@ -119,8 +189,13 @@ void Thing::update(Actor *actor) {
 		// Compute the "Spring" Force
 		NiPoint3 diff2(diff.x * diff.x * sgn(diff.x), diff.y * diff.y * sgn(diff.y), diff.z * diff.z * sgn(diff.z));
 		NiPoint3 force = (diff * stiffness) + (diff2 * stiffness2) - NiPoint3(0, 0, gravityBias);
-		//showPos(diff);
-		//showPos(force);
+
+#if DEBUG
+		logger.error("Diff2: ");
+		showPos(diff2);
+		logger.error("Force: ");
+		showPos(force);
+#endif
 
 		do {
 			// Assume mass is 1, so Accelleration is Force, can vary mass by changinf force
@@ -134,35 +209,66 @@ void Thing::update(Actor *actor) {
 
 
 		NiPoint3 newPos = oldWorldPos + posDelta;
+#if DEBUG
+		logger.error("posDelta: ");
+		showPos(posDelta);
+		logger.error("newPos: ");
+		showPos(newPos);
+#endif
 		// clamp the difference to stop the breast severely lagging at low framerates
-		auto diff = newPos - target;
+		diff = newPos- target;
+
 		diff.x = clamp(diff.x, -maxOffset, maxOffset);
 		diff.y = clamp(diff.y, -maxOffset, maxOffset);
 		diff.z = clamp(diff.z-gravityCorrection, -maxOffset, maxOffset) + gravityCorrection;
 
-		oldWorldPos = diff + target;
+		//oldWorldPos = diff + target;
+
+#if DEBUG
+		logger.error("diff from newPos: ");
+		showPos(diff);
+#endif
 
 		//logger.error("set positions\n");
 		// move the bones based on the supplied weightings
 		// Convert the world translations into local coordinates
-		auto invRot = obj->m_parent->m_worldTransform.rot.Transpose();
-		auto ldiff = invRot * diff;
+		auto invRot = obj->m_localTransform.rot * obj->m_worldTransform.rot.Transpose();
+		auto local_diff = invRot * diff;
 
-		// remove component along bone - might want something closer to worldY
+		//showPos(diff);
+		//showPos(local_diff);
+		// remove component along bone - might want something closer to world
 		//ldiff.y = 0;
 
-		oldWorldPos = (obj->m_parent->m_worldTransform.rot * ldiff) + target;
+		oldWorldPos = diff + target;
+		//showRot(obj->m_parent->m_worldTransform.rot * invRot);
 
-		obj->m_localTransform.pos.x = ldiff.x * linearX;
-		obj->m_localTransform.pos.y = ldiff.y * linearY;
-		obj->m_localTransform.pos.z = ldiff.z * linearZ;
-		auto rdiff = ldiff * rotational;
-		obj->m_localTransform.rot.SetEulerAngles(0, 0, rdiff.z);
+#if DEBUG
+		logger.error("localTransform.pos: ");
+		showPos(obj->m_localTransform.pos);
+		logger.error("local_diff: ");
+		showPos(local_diff);
+#endif
+		// scale positions from config
+		obj->m_localTransform.pos.x = orig_local_pos.x + (local_diff.x * linearX);
+		obj->m_localTransform.pos.y = orig_local_pos.y + (local_diff.y * linearY);
+	    obj->m_localTransform.pos.z = orig_local_pos.z + (local_diff.z * linearZ);
 
+		// do some rotation
+		auto rdiff = local_diff * rotational;
+#if DEBUG
+		logger.error("rdiff: ");
+		showPos(rdiff);
+#endif
+		float heading, attitude, bank;
+		orig_local_rot.GetEulerAngles(&heading, &attitude, &bank);
+		obj->m_localTransform.rot.SetEulerAngles(heading + rdiff.x, attitude + rdiff.y, bank + rdiff.z);
 
 	}
-	//logger.error("end update()\n");
-
+	firstRun = false;
+#if DEBUG
+	logger.error("end update()\n");
+#endif
 
 
 

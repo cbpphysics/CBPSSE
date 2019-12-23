@@ -30,4 +30,4 @@ void Logger::error(const char *fmt...) {
 	}
 }
 
-Logger logger("Data\\SKSE\\Plugins\\cbp.log");
+Logger logger("Data\\F4SE\\Plugins\\cbp.log");

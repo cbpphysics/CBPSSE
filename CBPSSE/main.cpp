@@ -1,10 +1,10 @@
 #include "common/ITypes.h"
 #include <string>
-#include "skse64/PluginAPI.h"
-#include "skse64_common/skse_version.h"
-#include "skse64_common/SafeWrite.h"
-#include "skse64/GameAPI.h"
-#include "skse64/GameEvents.h"
+#include "f4se/PluginAPI.h"
+#include "f4se_common/f4se_version.h"
+#include "f4se_common/SafeWrite.h"
+#include "f4se/GameAPI.h"
+#include "f4se/GameEvents.h"
 #include "log.h"
 #include "config.h"
 
@@ -12,63 +12,73 @@
 
 
 PluginHandle	g_pluginHandle = kPluginHandle_Invalid;
-//SKSEMessagingInterface	* g_messagingInterface = NULL;
+//F4SEMessagingInterface	* g_messagingInterface = NULL;
 
-//SKSEScaleformInterface		* g_scaleform = NULL;
-//SKSESerializationInterface	* g_serialization = NULL;
-SKSETaskInterface				* g_task = nullptr;
-//IDebugLog	gLog("Data\\SKSE\\Plugins\\hook.log");
+//F4SEScaleformInterface		* g_scaleform = NULL;
+//F4SESerializationInterface	* g_serialization = NULL;
+F4SETaskInterface				* g_task = nullptr;
+//IDebugLog	gLog("Data\\F4SE\\Plugins\\hook.log");
 
 
 void DoHook();
 
 
 
-void MessageHandler(SKSEMessagingInterface::Message * msg)
+void MessageHandler(F4SEMessagingInterface::Message * msg)
 {
 	switch (msg->type)
 	{
-		case SKSEMessagingInterface::kMessage_DataLoaded:
+		case F4SEMessagingInterface::kMessage_GameDataReady:
 		{
-			logger.info("kMessage_DataLoaded\n");
+			logger.info("kMessage_GameDataReady\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_NewGame:
+		case F4SEMessagingInterface::kMessage_GameLoaded:
+		{
+			logger.info("kMessage_GameLoaded\n");
+		}
+		break;
+		case F4SEMessagingInterface::kMessage_NewGame:
 		{
 			logger.info("kMessage_NewGame\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_PreLoadGame:
+		case F4SEMessagingInterface::kMessage_PreLoadGame:
 		{
 			logger.info("kMessage_PreLoadGame\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_PostLoad:
+		case F4SEMessagingInterface::kMessage_PostLoad:
 		{
 			logger.info("kMessage_PostLoad\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_PostPostLoad:
+		case F4SEMessagingInterface::kMessage_PostPostLoad:
 		{
 			logger.info("kMessage_PostPostLoad\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_PostLoadGame:
+		case F4SEMessagingInterface::kMessage_PostLoadGame:
 		{
 			logger.info("kMessage_PostLoadGame\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_SaveGame:
+		case F4SEMessagingInterface::kMessage_PreSaveGame:
 		{
-			logger.info("kMessage_SaveGame\n");
+			logger.info("kMessage_PreSaveGame\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_DeleteGame:
+		case F4SEMessagingInterface::kMessage_PostSaveGame:
+		{
+			logger.info("kMessage_PostSaveGame\n");
+		}
+		break;
+		case F4SEMessagingInterface::kMessage_DeleteGame:
 		{
 			logger.info("kMessage_DeleteGame\n");
 		}
 		break;
-		case SKSEMessagingInterface::kMessage_InputLoaded:
+		case F4SEMessagingInterface::kMessage_InputLoaded:
 		{
 			logger.info("kMessage_InputLoaded\n");
 		}
@@ -81,9 +91,9 @@ void MessageHandler(SKSEMessagingInterface::Message * msg)
 extern "C"
 {
 
-	bool SKSEPlugin_Query(const SKSEInterface * skse, PluginInfo * info)
+	bool F4SEPlugin_Query(const F4SEInterface * f4se, PluginInfo * info)
 	{
-		logger.info("CBP Physics SKSE Plugin\n");
+		logger.info("CBP Physics F4SE Plugin\n");
 		logger.error("Query called\n");
 
 
@@ -93,16 +103,16 @@ extern "C"
 		info->version = 24;
 
 		// store plugin handle so we can identify ourselves later
-		g_pluginHandle = skse->GetPluginHandle();
+		g_pluginHandle = f4se->GetPluginHandle();
 
-		if (skse->isEditor)
+		if (f4se->isEditor)
 		{
 			logger.error("loaded in editor, marking as incompatible\n");
 			return false;
 		}
-		else if (skse->runtimeVersion != RUNTIME_VERSION)
+		else if (f4se->runtimeVersion != RUNTIME_VERSION)
 		{
-			logger.error("unsupported runtime version %08X", skse->runtimeVersion);
+			logger.error("unsupported runtime version %08X", f4se->runtimeVersion);
 			return false;
 		}
 		// supported runtime version
@@ -111,11 +121,11 @@ extern "C"
 		return true;
 	}
 
-	bool SKSEPlugin_Load(const SKSEInterface * skse)
+	bool F4SEPlugin_Load(const F4SEInterface * f4se)
 	{
 		logger.error("CBP Loading\n");
 
-		g_task = (SKSETaskInterface *)skse->QueryInterface(kInterface_Task);
+		g_task = (F4SETaskInterface *)f4se->QueryInterface(kInterface_Task);
 		if (!g_task)
 		{
 			logger.error("Couldn't get Task interface\n");
@@ -125,7 +135,7 @@ extern "C"
 		// Load initial config before the hook.
 		logger.error("Loading Config\n");
 		loadConfig();
-		//g_messagingInterface->RegisterListener(0, "SKSE", MessageHandler); 
+		//g_messagingInterface->RegisterListener(0, "F4SE", MessageHandler); 
 		logger.error("Hooking Game\n");
 		DoHook();
 		logger.error("CBP Load Complete\n");

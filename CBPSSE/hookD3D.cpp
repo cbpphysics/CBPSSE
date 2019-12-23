@@ -5,7 +5,7 @@
 
 #include "log.h"
 #include "../detourxs-master/detourxs.h"
-#include "skse64_common/Utilities.h"
+#include "f4se_common/Utilities.h"
 
 //#define SAFE_RELEASE(x) if((x)) {x->Release(); x = nullptr;}
 //
@@ -162,8 +162,8 @@ UINT64 __cdecl Render(void *This, UINT64 arg)
 //RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B34A0);
 //RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0);
 //RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0);
-RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2FF0);
-
+//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2FF0);
+RelocPtr <void*> ProcessEventQueue_Internal(0x0211CF80);
 
 
 
@@ -175,6 +175,6 @@ void DoHook() {
 	//CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
 
 	//renderDetour.Create(render.GetPtr(), Render, &(LPVOID)orender);
-	renderDetour.Create(ProcessTasks_HookTarget_Enter.GetPtr(), Render, &(LPVOID)orender);
+	renderDetour.Create((LPVOID)ProcessEventQueue_Internal.GetPtr(), Render, &(LPVOID)orender);
 	//orender = (renderHook)renderDetour.GetTrampoline();
 }

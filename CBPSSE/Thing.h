@@ -1,7 +1,7 @@
 #pragma once
-#include <skse64\NiTypes.h>
-#include <skse64\NiObjects.h>
-#include <skse64\GameReferences.h>
+#include <f4se\NiTypes.h>
+#include <f4se\NiObjects.h>
+#include <f4se\GameReferences.h>
 #include <time.h>
 #include "config.h"
 
@@ -9,6 +9,8 @@ class Thing {
 	BSFixedString boneName;
 	NiPoint3 oldWorldPos;
 	NiPoint3 velocity;
+	NiPoint3 orig_local_pos;
+	NiMatrix43 orig_local_rot;
 	clock_t time;
 
 public:
@@ -26,6 +28,10 @@ public:
 	float linearZ = 0;
 	float rotational = 0.1;
 	float timeStep = 1.0f;
+
+	boolean firstRun;
+
+	//std::unordered_map<const char*, NiMatrix43> boneRotationMatrices;
 
 	Thing(NiAVObject *obj, BSFixedString &name);
 	~Thing();
