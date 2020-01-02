@@ -23,7 +23,7 @@
     <ProjectGuid>{49438A48-1C92-4D07-97C0-BDF0744386F9}</ProjectGuid>
     <RootNamespace>CBBPSSE</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
-    <ProjectName>CBPSSE</ProjectName>
+    <ProjectName>OpenCBP_FO4</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

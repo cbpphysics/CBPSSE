@@ -180,9 +180,8 @@ void Thing::update(Actor *actor) {
 #endif
 	//NiMatrix43 origWorldRot = origLocalRot * obj->m_parent->m_worldTransform.rot;
 
-	NiMatrix43 targetRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose() * skeletonObj->m_localTransform.rot.Transpose();
+	NiMatrix43 targetRot = skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot * skeletonObj->m_localTransform.rot * obj->m_parent->m_worldTransform.rot.Transpose();
 	NiPoint3 origWorldPos = (obj->m_parent->m_worldTransform.rot.Transpose() * origLocalPos.at(boneName.c_str())) +  obj->m_parent->m_worldTransform.pos;
-	NiPoint3 calcWorldPos = (obj->m_parent->m_worldTransform.rot.Transpose() * obj->m_localTransform.pos) + obj->m_parent->m_worldTransform.pos;
 
 	// Offset to move Center of Mass make rotational motion more significant
 	NiPoint3 target = (targetRot * NiPoint3(0, cogOffset, 0)) + origWorldPos;
@@ -202,18 +201,16 @@ void Thing::update(Actor *actor) {
 	showPos(obj->m_worldTransform.pos);
 	logger.error("Parent World Position difference: ");
 	showPos(obj->m_worldTransform.pos - obj->m_parent->m_worldTransform.pos);
-	logger.error("Target with cogOffset %8.4f: ", cogOffset);
-	showPos(target);
+	logger.error("Target Rotation * cogOffset %8.4f: ", cogOffset);
+	showPos(targetRot * NiPoint3(0, cogOffset, 0));
 	logger.error("Target Rotation:\n");
 	showRot(targetRot);
-	logger.error("cogOffset x Transformation:");
-	showPos(targetRot * NiPoint3(cogOffset, 0, 0));
-	logger.error("cogOffset y Transformation:");
-	showPos(targetRot * NiPoint3(0, cogOffset, 0));
-	logger.error("cogOffset z Transformation:");
-	showPos(targetRot * NiPoint3(0, 0, cogOffset));
-	logger.error("Calculated World Position: ");
-	showPos(calcWorldPos);
+	//logger.error("cogOffset x Transformation:");
+	//showPos(targetRot * NiPoint3(cogOffset, 0, 0));
+	//logger.error("cogOffset y Transformation:");
+	//showPos(targetRot * NiPoint3(0, cogOffset, 0));
+	//logger.error("cogOffset z Transformation:");
+	//showPos(targetRot * NiPoint3(0, 0, cogOffset));
 #endif
 
 	// diff is Difference in position between old and new world position
@@ -225,7 +222,6 @@ void Thing::update(Actor *actor) {
 #if DEBUG
 	logger.error("Diff after gravity correction %f: ", gravityCorrection);
 	showPos(diff);
-
 #endif
 
 	if (fabs(diff.x) > 100 || fabs(diff.y) > 100 || fabs(diff.z) > 100) {
@@ -262,8 +258,6 @@ void Thing::update(Actor *actor) {
 
 		NiPoint3 newPos = oldWorldPos + posDelta;
 
-		//NiPoint3 newPos = oldWorldPos;
-
 		oldWorldPos = diff + target;
 
 #if DEBUG
@@ -275,25 +269,9 @@ void Thing::update(Actor *actor) {
 		// clamp the difference to stop the breast severely lagging at low framerates
 		diff = newPos - target;
 
-//#if DEBUG
-//		logger.error("Diff after gravity correction %f: ", gravityCorrection);
-//		logger.error("%8.4f\n", -diff.x + target.x - oldWorldPos.x);
-//		logger.error("%8.4f\n", -diff.y + target.y - oldWorldPos.y);
-//		logger.error("%8.4f\n", -diff.z + target.z - oldWorldPos.z);
-//#endif
-//		if ((-diff.x + target.x - oldWorldPos.x) < 0.1 &&
-//			(-diff.y + target.y - oldWorldPos.y) < 0.1 &&
-//			(-diff.z + target.z - oldWorldPos.z) < 0.1) {
-//#if DEBUG
-//			logger.error("Diff set to 0: ");
-//			showPos(diff);
-//#endif
-//			diff = NiPoint3(0, 0, 0);
-//		}
-
 		diff.x = clamp(diff.x, -maxOffset, maxOffset);
 		diff.y = clamp(diff.y, -maxOffset, maxOffset);
-		diff.z = clamp(diff.z - gravityCorrection, -maxOffset, maxOffset) + gravityCorrection; // Old clamping with "gravity correction" was kind of ugly so I took it out
+		diff.z = clamp(diff.z - gravityCorrection, -maxOffset, maxOffset) + gravityCorrection;
 
 		//oldWorldPos = target + diff;
 
@@ -304,20 +282,15 @@ void Thing::update(Actor *actor) {
 		//showPos(oldWorldPos);
 #endif
 
-		//logger.error("set positions\n");
 		// move the bones based on the supplied weightings
 		// Convert the world translations into local coordinates
-		//auto invRot = obj->m_localTransform.rot * obj->m_parent->m_worldTransform.rot.Transpose();
 		auto invRot = obj->m_parent->m_worldTransform.rot;
 		auto localDiff = invRot * diff;
 
-		//showPos(diff);
-		//showPos(local_diff);
 		// remove component along bone - might want something closer to world
 		//localDiff.y = 0;
 
 		oldWorldPos = diff + target;
-		//showRot(obj->m_parent->m_worldTransform.rot * invRot);
 #if DEBUG
 		logger.error("invRot x=10 Transformation:");
 		showPos(invRot * NiPoint3(10, 0, 0));
@@ -352,14 +325,15 @@ void Thing::update(Actor *actor) {
 		showPos(origLocalPos.at(boneName.c_str()));
 		logger.error("origLocalRot:");
 		showRot(origLocalRot.at(boneName.c_str()));
-		//logger.error("rotDiff: ");
-		//showPos(rotDiff);
+		logger.error("rotDiff: ");
+		showPos(rotDiff);
 #endif
 		float heading, attitude, bank;
+		
+		// EulerAngles are in radians
 		origLocalRot.at(boneName.c_str()).GetEulerAngles(&heading, &attitude, &bank);
 		// Note... this is supposed in the rotational space of m_localTransform
-		obj->m_localTransform.rot.SetEulerAngles(heading + rotDiff.x, attitude + rotDiff.y, bank + rotDiff.z);
-
+		obj->m_localTransform.rot.SetEulerAngles(heading + rotDiff.z, attitude + rotDiff.y, bank + rotDiff.x);
 	}
 #if DEBUG
 	logger.error("end update()\n");
