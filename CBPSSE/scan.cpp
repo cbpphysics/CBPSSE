@@ -164,25 +164,6 @@ void updateActors() {
 				}
 			}
 		}
-		//for (int i = 0; i < cell->refData.maxSize; i++) {
-		//	auto ref = cell->refData.refArray[i];
-		//	if (ref.unk08 != NULL && ref.ref) {
-		//		auto actor = DYNAMIC_CAST(ref.ref, TESObjectREFR, Actor);
-		//		if (actor && actor->unkF0) {
-		//			auto soIt = actors.find(actor->formID);
-		//			if (soIt == actors.end()) {
-		//				//logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
-		//				auto obj = SimObj(actor, config);
-		//				if (obj.actorValid(actor)) {
-		//					actors.emplace(actor->formID, obj);
-		//					actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
-		//				}
-		//			} else if (soIt->second.actorValid(actor)) {
-		//				actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
-		//			}
-		//		}
-		//	}
-		//}
 	}
 
 	//static bool done = false;
@@ -199,6 +180,7 @@ void updateActors() {
 	//	done = true;
 	//}
 
+	// Reload config
 	static int count = 0;
 	if (configReloadCount && count++ > configReloadCount) {
 		count = 0;
@@ -207,13 +189,14 @@ void updateActors() {
 			a.second.updateConfig(config);
 		}
 	}
-	logger.error("Updating %d entites\n", actorEntries.size());
+
+	//logger.error("Updating %d entities\n", actorEntries.size());
 	for (auto &a : actorEntries) {
-		auto objIt = actors.find(a.id);
-		if (objIt == actors.end()) {
-			logger.error("missing Sim Object\n");
+		auto objIterator = actors.find(a.id);
+		if (objIterator == actors.end()) {
+			//logger.error("Sim Object not found in tracked actors\n");
 		} else {
-			auto &obj = objIt->second;
+			auto &obj = objIterator->second;
 			if (obj.isBound()) {
 				obj.update(a.actor);
 			} else {
@@ -240,7 +223,6 @@ public:
 	virtual void Dispose() {
 		delete this;
 	}
-
 };
 
 

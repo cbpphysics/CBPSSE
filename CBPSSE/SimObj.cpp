@@ -5,28 +5,17 @@
 #include "log.h"
 
 
+enum femaleBodyType {CBBE_BODY, FG_BODY};
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
+const char *leftScrotumName_BT2 = "Penis_Balls_CBP_01";
+const char *rightScrotumName_BT2 = "Penis_Balls_CBP_02";
 
-const char *leftBreastName = "Breast_CBP_R_02";
-const char *rightBreastName = "Breast_CBP_L_02";
-const char *leftButtName = "Butt_CBP_R_01";
-const char *rightButtName = "Butt_CBP_L_01";
-const char *bellyName = "HDT Belly";
+std::unordered_map<const char*, std::string> configMap;
 
-const char *scrotumName = "NPC GenitalsScrotum [GenScrot]";
-const char *leftScrotumName = "Penis_Balls_CBP_01";
-const char *rightScrotumName = "Penis_Balls_CBP_02";
-
-std::unordered_map<const char *, std::string> configMap = {
-	{leftBreastName, "Breast"}, {rightBreastName, "Breast"},
-	{leftButtName, "Butt"}, {rightButtName, "Butt"},
-	/*{bellyName, "Belly"}*/ };
-
-
-std::vector<const char *> femaleBones = { leftBreastName, rightBreastName, leftButtName, rightButtName, /*bellyName*/ };
+std::vector<const char *> femaleBones;
 
 SimObj::SimObj(Actor *actor, config_t &config)
-	: things(5){
+	: things(4){
 	id = actor->formID;
 }
 
@@ -72,16 +61,17 @@ bool SimObj::actorValid(Actor *actor) {
 void SimObj::update(Actor *actor) {
 	if (!bound)
 		return;
-	logger.error("update\n");
+	//logger.error("update\n");
 	for (auto &t : things) {
 		t.second.update(actor);
 	}
-	logger.error("end SimObj update\n");
+	//logger.error("end SimObj update\n");
 }
 
 bool SimObj::updateConfig(config_t & config) {
 	for (auto &t : things) {
 		std::string &section = configMap[t.first];
+		logger.info("updateConfig in SimObj: %s, %s\n", section, t.first);
 		auto &centry = config[section];
 		t.second.updateConfig(centry);
 	}

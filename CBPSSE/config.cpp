@@ -13,6 +13,15 @@ int configReloadCount = 60;
 config_t config;
 
 
+const char* leftBreastName_FG = "Breast_CBP_L_02";
+const char* rightBreastName_FG = "Breast_CBP_R_02";
+const char* leftButtName_FG = "Butt_CBP_L_01";
+const char* rightButtName_FG = "Butt_CBP_R_01";
+
+const char* leftBreastName_CBBE = "LBreast_skin";
+const char* rightBreastName_CBBE = "RBreast_skin";
+const char* leftButtName_CBBE = "LButtFat_skin";
+const char* rightButtName_CBBE = "RButtFat_skin";
 
 void loadConfig() {
 	char buffer[1024];
@@ -44,5 +53,32 @@ void loadConfig() {
 	} while (!feof(fh));
 	fclose(fh);
 
+	// temporary config setup until ini format
+	if (config["Breast"]["FG"] == 1.0) {
+		femaleBones.push_back(leftBreastName_FG);
+		femaleBones.push_back(rightBreastName_FG);
+		configMap.insert({ leftBreastName_FG, "Breast" });
+		configMap.insert({ rightBreastName_FG, "Breast" });
+	}
+	else {
+		// Default is CBBE
+		femaleBones.push_back(leftBreastName_CBBE);
+		femaleBones.push_back(rightBreastName_CBBE);
+		configMap.insert({ leftBreastName_CBBE, "Breast" });
+		configMap.insert({ rightBreastName_CBBE, "Breast" });
+	}
+	if (config["Butt"]["FG"] == 1.0) {
+		femaleBones.push_back(leftButtName_FG);
+		femaleBones.push_back(rightButtName_FG);
+		configMap.insert({ leftButtName_FG, "Butt" });
+		configMap.insert({ rightButtName_FG, "Butt" });
+	}
+	else {
+		// Default is CBBE
+		femaleBones.push_back(leftButtName_CBBE);
+		femaleBones.push_back(rightButtName_CBBE);
+		configMap.insert({ leftButtName_CBBE, "Butt" });
+		configMap.insert({ rightButtName_CBBE, "Butt" });
+	}
 	configReloadCount = config["Tuning"]["rate"];
 }

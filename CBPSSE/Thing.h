@@ -9,8 +9,8 @@ class Thing {
 	BSFixedString boneName;
 	NiPoint3 oldWorldPos;
 	NiPoint3 velocity;
-	NiPoint3 orig_local_pos;
-	NiMatrix43 orig_local_rot;
+	//NiPoint3 origLocalPos;
+	//NiMatrix43 origLocalRot;
 	clock_t time;
 
 public:
@@ -26,12 +26,12 @@ public:
 	float linearX = 0;
 	float linearY = 0;
 	float linearZ = 0;
-	float rotational = 0.1;
+	float rotationalX = 0.1;
+	float rotationalY = 0.1;
+	float rotationalZ = 0.1;
 	float timeStep = 1.0f;
 
 	boolean firstRun;
-
-	//std::unordered_map<const char*, NiMatrix43> boneRotationMatrices;
 
 	Thing(NiAVObject *obj, BSFixedString &name);
 	~Thing();

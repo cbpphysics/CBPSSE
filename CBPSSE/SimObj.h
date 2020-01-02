@@ -24,8 +24,4 @@ public:
 
 
 extern std::vector<const char *> femaleBones;
-extern const char *leftBreastName;
-extern const char *rightBreastName;
-extern const char *leftButtName;
-extern const char *rightButtName;
-extern const char *bellyName;
+extern std::unordered_map<const char*, std::string> configMap;
