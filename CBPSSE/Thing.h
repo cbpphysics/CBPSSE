@@ -31,8 +31,6 @@ public:
 	float rotationalZ = 0.1;
 	float timeStep = 1.0f;
 
-	boolean firstRun;
-
 	Thing(NiAVObject *obj, BSFixedString &name);
 	~Thing();
 
