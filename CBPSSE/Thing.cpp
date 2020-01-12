@@ -4,7 +4,7 @@
 #include <time.h>
 
 #define PI 3.14159265
-#define DEBUG 1
+#define DEBUG 0
 #define TRANSFORM_DEBUG 0
 
 std::unordered_map<const char*, NiPoint3> origLocalPos;
@@ -65,6 +65,9 @@ void Thing::updateConfig(configEntry_t & centry) {
 	gravityBias = centry["gravityBias"];
 	gravityCorrection = centry["gravityCorrection"];
 	cogOffset = centry["cogOffset"];
+	cogOffsetX = centry["cogOffsetX"];
+	cogOffsetZ = centry["cogOffsetZ"];
+	fusionGirlEnabled = centry["FG"] == 1.0;
 	if (timeTick <= 1)
 		timeTick = 1;
 
@@ -134,12 +137,12 @@ void Thing::update(Actor *actor) {
 		//logger.error("Actual m_worldTransform.rot Matrix:\n");
 		showRot(sceneObj->m_worldTransform.rot);
 		logger.info("---\n");
-		if (sceneObj->m_parent) {
-			logger.error("Calculated m_worldTransform.pos: ");
-			showPos((sceneObj->m_parent->m_worldTransform.rot.Transpose() * sceneObj->m_localTransform.pos) + sceneObj->m_parent->m_worldTransform.pos);
-			logger.error("Calculated m_worldTransform.rot Matrix:\n");
-			showRot(sceneObj->m_localTransform.rot * sceneObj->m_parent->m_worldTransform.rot);
-		}
+		//if (sceneObj->m_parent) {
+		//	logger.error("Calculated m_worldTransform.pos: ");
+		//	showPos((sceneObj->m_parent->m_worldTransform.rot.Transpose() * sceneObj->m_localTransform.pos) + sceneObj->m_parent->m_worldTransform.pos);
+		//	logger.error("Calculated m_worldTransform.rot Matrix:\n");
+		//	showRot(sceneObj->m_localTransform.rot * sceneObj->m_parent->m_worldTransform.rot);
+		//}
 		sceneObj = sceneObj->m_parent;	
 	}
 #endif
@@ -161,6 +164,7 @@ void Thing::update(Actor *actor) {
 
 	auto skeletonObj = obj;
 	NiAVObject * comObj;
+	bool skeletonFound = false;
 	while (skeletonObj->m_parent)
 	{
 		if (skeletonObj->m_parent->m_name == BSFixedString(COM_boneName)) {
@@ -168,23 +172,39 @@ void Thing::update(Actor *actor) {
 		}
 		else if (skeletonObj->m_parent->m_name == BSFixedString(skeletonNif_boneName)) {
 			skeletonObj = skeletonObj->m_parent;
+			skeletonFound = true;
 			break;
 		}
 		skeletonObj = skeletonObj->m_parent;
 	}
-
+	if (skeletonFound == false) {
+		logger.error("Couldn't find skeleton for actor %08x\n", actor->formID);
+		return;
+	}
 #if DEBUG
 	logger.error("bone %s for actor %08x with parent %s\n", boneName.c_str(), actor->formID, skeletonObj->m_name.c_str());
 	showRot(skeletonObj->m_worldTransform.rot);
 	//showPos(obj->m_parent->m_worldTransform.rot.Transpose() * obj->m_localTransform.pos);
 #endif
 	//NiMatrix43 origWorldRot = origLocalRot * obj->m_parent->m_worldTransform.rot;
-
-	NiMatrix43 targetRot = skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot * skeletonObj->m_localTransform.rot * obj->m_parent->m_worldTransform.rot.Transpose();
+	NiMatrix43 targetRot;
+	if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
+#if DEBUG
+		logger.error("FG Breasts Transform targetRot\n");
+#endif
+		targetRot = skeletonObj->m_localTransform.rot.Transpose();
+	}
+	else {
+		//targetRot = skeletonObj->m_localTransform.rot.Transpose() *
+		//			comObj->m_localTransform.rot *
+		//			skeletonObj->m_localTransform.rot *
+		//			obj->m_parent->m_worldTransform.rot.Transpose();
+		targetRot = skeletonObj->m_localTransform.rot.Transpose();
+	}
 	NiPoint3 origWorldPos = (obj->m_parent->m_worldTransform.rot.Transpose() * origLocalPos.at(boneName.c_str())) +  obj->m_parent->m_worldTransform.pos;
 
 	// Offset to move Center of Mass make rotational motion more significant
-	NiPoint3 target = (targetRot * NiPoint3(0, cogOffset, 0)) + origWorldPos;
+	NiPoint3 target = (targetRot * NiPoint3(0, cogOffset, cogOffsetZ)) + origWorldPos;
 
 	// TODO: left and right with same parents transforms should be different... example: the butt
 	// Relative Left
@@ -199,18 +219,18 @@ void Thing::update(Actor *actor) {
 #if DEBUG
 	logger.error("World Position: ");
 	showPos(obj->m_worldTransform.pos);
-	logger.error("Parent World Position difference: ");
-	showPos(obj->m_worldTransform.pos - obj->m_parent->m_worldTransform.pos);
+	//logger.error("Parent World Position difference: ");
+	//showPos(obj->m_worldTransform.pos - obj->m_parent->m_worldTransform.pos);
 	logger.error("Target Rotation * cogOffset %8.4f: ", cogOffset);
 	showPos(targetRot * NiPoint3(0, cogOffset, 0));
-	logger.error("Target Rotation:\n");
-	showRot(targetRot);
-	//logger.error("cogOffset x Transformation:");
-	//showPos(targetRot * NiPoint3(cogOffset, 0, 0));
-	//logger.error("cogOffset y Transformation:");
-	//showPos(targetRot * NiPoint3(0, cogOffset, 0));
-	//logger.error("cogOffset z Transformation:");
-	//showPos(targetRot * NiPoint3(0, 0, cogOffset));
+	//logger.error("Target Rotation:\n");
+	//showRot(targetRot);
+	logger.error("cogOffset x Transformation:");
+	showPos(targetRot * NiPoint3(cogOffset, 0, 0));
+	logger.error("cogOffset y Transformation:");
+	showPos(targetRot * NiPoint3(0, cogOffset, 0));
+	logger.error("cogOffset z Transformation:");
+	showPos(targetRot * NiPoint3(0, 0, cogOffset));
 #endif
 
 	// diff is Difference in position between old and new world position
@@ -256,7 +276,7 @@ void Thing::update(Actor *actor) {
 			deltaT -= timeTick;
 		} while (deltaT >= timeTick);
 
-		NiPoint3 newPos = oldWorldPos + posDelta;
+	NiPoint3 newPos = oldWorldPos +posDelta;
 
 		oldWorldPos = diff + target;
 
@@ -284,8 +304,25 @@ void Thing::update(Actor *actor) {
 
 		// move the bones based on the supplied weightings
 		// Convert the world translations into local coordinates
-		auto invRot = obj->m_parent->m_worldTransform.rot;
-		auto localDiff = invRot * diff;
+
+		NiMatrix43 invRot;
+
+		if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
+#if DEBUG
+			logger.error("FG Breasts Transform invRot\n");
+#endif
+			invRot = obj->m_parent->m_worldTransform.rot;
+		}
+		else {
+			//invRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose();
+			invRot = obj->m_parent->m_worldTransform.rot;
+		}
+
+		auto localDiff = NiPoint3(diff.x * linearX,
+									diff.y * linearY,
+									diff.z * linearZ);
+		auto rotDiff = localDiff;
+		localDiff = invRot * localDiff;
 
 		// remove component along bone - might want something closer to world
 		//localDiff.y = 0;
@@ -306,14 +343,18 @@ void Thing::update(Actor *actor) {
 		showPos(localDiff);
 #endif
 		// scale positions from config
-		NiPoint3 newLocalPos = NiPoint3((localDiff.x * linearX) + origLocalPos.at(boneName.c_str()).x,
-										(localDiff.y * linearY) + origLocalPos.at(boneName.c_str()).y,
-										(localDiff.z * linearZ) + origLocalPos.at(boneName.c_str()).z
+		NiPoint3 newLocalPos = NiPoint3((localDiff.x) + origLocalPos.at(boneName.c_str()).x,
+										(localDiff.y) + origLocalPos.at(boneName.c_str()).y,
+										(localDiff.z) + origLocalPos.at(boneName.c_str()).z
 		);
 		obj->m_localTransform.pos = newLocalPos;
 
 		// do some rotation
-		auto rotDiff = targetRot * diff;
+		//auto rotDiff = targetRot.Transpose() * diff;
+#if DEBUG
+		logger.error("rotDiff: ");
+		showPos(rotDiff);
+#endif
 		rotDiff.x *= rotationalX;
 		rotDiff.y *= rotationalY;
 		rotDiff.z *= rotationalZ;
@@ -325,15 +366,12 @@ void Thing::update(Actor *actor) {
 		showPos(origLocalPos.at(boneName.c_str()));
 		logger.error("origLocalRot:");
 		showRot(origLocalRot.at(boneName.c_str()));
-		logger.error("rotDiff: ");
-		showPos(rotDiff);
+
 #endif
-		float heading, attitude, bank;
-		
-		// EulerAngles are in radians
-		origLocalRot.at(boneName.c_str()).GetEulerAngles(&heading, &attitude, &bank);
-		// Note... this is supposed in the rotational space of m_localTransform
-		obj->m_localTransform.rot.SetEulerAngles(heading + rotDiff.z, attitude + rotDiff.y, bank + rotDiff.x);
+		// Do rotation.
+		NiMatrix43 standardRot;
+		standardRot.SetEulerAngles(rotDiff.x, rotDiff.y, rotDiff.z);
+		obj->m_localTransform.rot = standardRot * origLocalRot.at(boneName.c_str());
 	}
 #if DEBUG
 	logger.error("end update()\n");

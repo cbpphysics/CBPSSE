@@ -25,7 +25,7 @@ const char* rightButtName_CBBE = "RButtFat_skin";
 
 void loadConfig() {
 	char buffer[1024];
-	logger.info("loadConfig\n");
+	//logger.info("loadConfig\n");
 	FILE *fh = fopen("Data\\F4SE\\Plugins\\CBPConfig.txt", "r");
 	if (!fh) {
 		logger.error("Failed to open config file CBPConfig.txt\n");

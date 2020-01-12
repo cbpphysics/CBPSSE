@@ -19,6 +19,9 @@ public:
 	float damping = 0.2f;
 	float maxOffset = 5.0f;
 	float cogOffset = 0.0f;
+	float cogOffsetX = 0.0f;
+	float cogOffsetZ = 0.0f;
+
 	float gravityBias = 0.0f;
 	float gravityCorrection = 0.0f;
 	//float zOffset = 0.0f;	// Computed based on GravityBias value
@@ -30,6 +33,7 @@ public:
 	float rotationalY = 0.1;
 	float rotationalZ = 0.1;
 	float timeStep = 1.0f;
+	bool fusionGirlEnabled;
 
 	Thing(NiAVObject *obj, BSFixedString &name);
 	~Thing();

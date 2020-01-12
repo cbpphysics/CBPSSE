@@ -71,7 +71,7 @@ void SimObj::update(Actor *actor) {
 bool SimObj::updateConfig(config_t & config) {
 	for (auto &t : things) {
 		std::string &section = configMap[t.first];
-		logger.info("updateConfig in SimObj: %s, %s\n", section, t.first);
+		//logger.info("updateConfig in SimObj: %s, %s\n", section, t.first);
 		auto &centry = config[section];
 		t.second.updateConfig(centry);
 	}
