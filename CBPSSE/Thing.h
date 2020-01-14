@@ -17,9 +17,11 @@ public:
 	float stiffness = 0.5f;
 	float stiffness2 = 0.0f;
 	float damping = 0.2f;
-	float maxOffset = 5.0f;
-	float cogOffset = 0.0f;
+	float maxOffsetX = 5.0f;
+	float maxOffsetY = 5.0f;
+	float maxOffsetZ = 5.0f;
 	float cogOffsetX = 0.0f;
+	float cogOffsetY = 0.0f;
 	float cogOffsetZ = 0.0f;
 
 	float gravityBias = 0.0f;

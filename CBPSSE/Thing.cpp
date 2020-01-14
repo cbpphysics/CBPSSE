@@ -49,7 +49,9 @@ void Thing::updateConfig(configEntry_t & centry) {
 	stiffness = centry["stiffness"];
 	stiffness2 = centry["stiffness2"];
 	damping = centry["damping"];
-	maxOffset = centry["maxoffset"];
+	maxOffsetX = centry["maxoffsetX"];
+	maxOffsetY = centry["maxoffsetY"];
+	maxOffsetZ = centry["maxoffsetZ"];
 	timeTick = centry["timetick"];
 	linearX = centry["linearX"];
 	linearY = centry["linearY"];
@@ -64,7 +66,7 @@ void Thing::updateConfig(configEntry_t & centry) {
 		timeStep = 1.0f;
 	gravityBias = centry["gravityBias"];
 	gravityCorrection = centry["gravityCorrection"];
-	cogOffset = centry["cogOffset"];
+	cogOffsetY = centry["cogOffsetY"];
 	cogOffsetX = centry["cogOffsetX"];
 	cogOffsetZ = centry["cogOffsetZ"];
 	fusionGirlEnabled = centry["FG"] == 1.0;
@@ -204,7 +206,7 @@ void Thing::update(Actor *actor) {
 	NiPoint3 origWorldPos = (obj->m_parent->m_worldTransform.rot.Transpose() * origLocalPos.at(boneName.c_str())) +  obj->m_parent->m_worldTransform.pos;
 
 	// Offset to move Center of Mass make rotational motion more significant
-	NiPoint3 target = (targetRot * NiPoint3(0, cogOffset, cogOffsetZ)) + origWorldPos;
+	NiPoint3 target = (targetRot * NiPoint3(cogOffsetX, cogOffsetY, cogOffsetZ)) + origWorldPos;
 
 	// TODO: left and right with same parents transforms should be different... example: the butt
 	// Relative Left
@@ -221,22 +223,22 @@ void Thing::update(Actor *actor) {
 	showPos(obj->m_worldTransform.pos);
 	//logger.error("Parent World Position difference: ");
 	//showPos(obj->m_worldTransform.pos - obj->m_parent->m_worldTransform.pos);
-	logger.error("Target Rotation * cogOffset %8.4f: ", cogOffset);
-	showPos(targetRot * NiPoint3(0, cogOffset, 0));
+	logger.error("Target Rotation * cogOffsetY %8.4f: ", cogOffsetY);
+	showPos(targetRot * NiPoint3(cogOffsetX, cogOffsetY, cogOffsetZ));
 	//logger.error("Target Rotation:\n");
 	//showRot(targetRot);
 	logger.error("cogOffset x Transformation:");
-	showPos(targetRot * NiPoint3(cogOffset, 0, 0));
+	showPos(targetRot * NiPoint3(cogOffsetX, 0, 0));
 	logger.error("cogOffset y Transformation:");
-	showPos(targetRot * NiPoint3(0, cogOffset, 0));
+	showPos(targetRot * NiPoint3(0, cogOffsetY, 0));
 	logger.error("cogOffset z Transformation:");
-	showPos(targetRot * NiPoint3(0, 0, cogOffset));
+	showPos(targetRot * NiPoint3(0, 0, cogOffsetZ));
 #endif
 
 	// diff is Difference in position between old and new world position
 	NiPoint3 diff = target - oldWorldPos;
 
-	// move up in rotated angle for gravity correction
+	// Move up in for gravity correction
 	diff += targetRot * NiPoint3(0, 0, gravityCorrection);
 
 #if DEBUG
@@ -289,9 +291,9 @@ void Thing::update(Actor *actor) {
 		// clamp the difference to stop the breast severely lagging at low framerates
 		diff = newPos - target;
 
-		diff.x = clamp(diff.x, -maxOffset, maxOffset);
-		diff.y = clamp(diff.y, -maxOffset, maxOffset);
-		diff.z = clamp(diff.z - gravityCorrection, -maxOffset, maxOffset) + gravityCorrection;
+		diff.x = clamp(diff.x, -maxOffsetX, maxOffsetX);
+		diff.y = clamp(diff.y, -maxOffsetY, maxOffsetY);
+		diff.z = clamp(diff.z - gravityCorrection, -maxOffsetZ, maxOffsetZ) + gravityCorrection;
 
 		//oldWorldPos = target + diff;
 
@@ -307,7 +309,12 @@ void Thing::update(Actor *actor) {
 
 		NiMatrix43 invRot;
 
-		if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
+		if (obj->m_name == BSFixedString("Breast_CBP_R_02")) {
+			NiMatrix43 standardRot;
+			standardRot.SetEulerAngles(0, PI, 0);
+			invRot = standardRot * obj->m_parent->m_worldTransform.rot;
+		}
+		else if (obj->m_name == BSFixedString("Breast_CBP_L_02")) {
 #if DEBUG
 			logger.error("FG Breasts Transform invRot\n");
 #endif
