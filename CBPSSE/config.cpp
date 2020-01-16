@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include "config.h"
-
+#include <set>
 #pragma warning(disable : 4996)
 
 int configReloadCount = 60;
@@ -25,6 +25,7 @@ const char* rightButtName_CBBE = "RButtFat_skin";
 
 void loadConfig() {
 	char buffer[1024];
+	std::set<std::string> femaleBonesSet;
 	//logger.info("loadConfig\n");
 	FILE *fh = fopen("Data\\F4SE\\Plugins\\CBPConfig.txt", "r");
 	if (!fh) {
@@ -35,6 +36,7 @@ void loadConfig() {
 	}
 
 	//Console_Print("Reading CBP Config");
+	// Rewrite this eventually
 	config.clear();
 	do {
 		auto str = fgets(buffer, 1023, fh);
@@ -48,37 +50,41 @@ void loadConfig() {
 				if (tok0 && tok1 && tok2) {
 					config[std::string(tok0)][std::string(tok1)] = atof(tok2);
 				}
+				if (std::string(tok0) != "Tuning") {
+					femaleBones.push_back(std::string(tok0));
+				}
 			}
 		}
 	} while (!feof(fh));
 	fclose(fh);
-
-	// temporary config setup until ini format
-	if (config["Breast"]["FG"] == 1.0) {
-		femaleBones.push_back(leftBreastName_FG);
-		femaleBones.push_back(rightBreastName_FG);
-		configMap.insert({ leftBreastName_FG, "Breast" });
-		configMap.insert({ rightBreastName_FG, "Breast" });
-	}
-	else {
-		// Default is CBBE
-		femaleBones.push_back(leftBreastName_CBBE);
-		femaleBones.push_back(rightBreastName_CBBE);
-		configMap.insert({ leftBreastName_CBBE, "Breast" });
-		configMap.insert({ rightBreastName_CBBE, "Breast" });
-	}
-	if (config["Butt"]["FG"] == 1.0) {
-		femaleBones.push_back(leftButtName_FG);
-		femaleBones.push_back(rightButtName_FG);
-		configMap.insert({ leftButtName_FG, "Butt" });
-		configMap.insert({ rightButtName_FG, "Butt" });
-	}
-	else {
-		// Default is CBBE
-		femaleBones.push_back(leftButtName_CBBE);
-		femaleBones.push_back(rightButtName_CBBE);
-		configMap.insert({ leftButtName_CBBE, "Butt" });
-		configMap.insert({ rightButtName_CBBE, "Butt" });
-	}
+	femaleBonesSet = std::set<std::string>(femaleBones.begin(), femaleBones.end());
+	femaleBones.assign(femaleBonesSet.begin(), femaleBonesSet.end());
+	//// temporary config setup until ini format
+	//if (config["Breast"]["FG"] == 1.0) {
+	//	femaleBones.push_back(leftBreastName_FG);
+	//	femaleBones.push_back(rightBreastName_FG);
+	//	configMap.insert({ leftBreastName_FG, "Breast" });
+	//	configMap.insert({ rightBreastName_FG, "Breast" });
+	//}
+	//else {
+	//	// Default is CBBE
+	//	femaleBones.push_back(leftBreastName_CBBE);
+	//	femaleBones.push_back(rightBreastName_CBBE);
+	//	configMap.insert({ leftBreastName_CBBE, "Breast" });
+	//	configMap.insert({ rightBreastName_CBBE, "Breast" });
+	//}
+	//if (config["Butt"]["FG"] == 1.0) {
+	//	femaleBones.push_back(leftButtName_FG);
+	//	femaleBones.push_back(rightButtName_FG);
+	//	configMap.insert({ leftButtName_FG, "Butt" });
+	//	configMap.insert({ rightButtName_FG, "Butt" });
+	//}
+	//else {
+	//	// Default is CBBE
+	//	femaleBones.push_back(leftButtName_CBBE);
+	//	femaleBones.push_back(rightButtName_CBBE);
+	//	configMap.insert({ leftButtName_CBBE, "Butt" });
+	//	configMap.insert({ rightButtName_CBBE, "Butt" });
+	//}
 	configReloadCount = config["Tuning"]["rate"];
 }

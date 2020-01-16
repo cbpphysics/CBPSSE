@@ -10,11 +10,11 @@ class SimObj {
 	UInt32 id = 0;
 	bool bound = false;
 public:
-	std::unordered_map<const char *, Thing> things;
+	std::unordered_map<std::string, Thing> things;
 	SimObj(Actor *actor, config_t &config);
 	SimObj() {}
 	~SimObj();
-	bool bind(Actor *actor, std::vector<const char *> &boneNames, config_t &config);
+	bool bind(Actor *actor, std::vector<std::string> &boneNames, config_t &config);
 	bool actorValid(Actor *actor);
 	void update(Actor *actor);
 	bool updateConfig(config_t &config);
@@ -23,5 +23,5 @@ public:
 };
 
 
-extern std::vector<const char *> femaleBones;
-extern std::unordered_map<const char*, std::string> configMap;
+extern std::vector<std::string> femaleBones;
+//extern std::unordered_map<const char*, std::string> configMap;

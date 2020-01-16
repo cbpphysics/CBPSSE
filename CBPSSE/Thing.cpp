@@ -3,7 +3,7 @@
 #include "f4se\NiNodes.h"
 #include <time.h>
 
-#define PI 3.14159265
+#define DEG_TO_RAD 3.14159265 / 180
 #define DEBUG 0
 #define TRANSFORM_DEBUG 0
 
@@ -59,6 +59,9 @@ void Thing::updateConfig(configEntry_t & centry) {
 	rotationalX = centry["rotationalX"];
 	rotationalY = centry["rotationalY"];
 	rotationalZ = centry["rotationalZ"];
+	rotationX = centry["rotationX"];
+	rotationY = centry["rotationY"];
+	rotationZ = centry["rotationZ"];
 	// Optional entries for backwards compatability 
 	if (centry.find("timeStep") != centry.end())
 		timeStep = centry["timeStep"];
@@ -208,15 +211,6 @@ void Thing::update(Actor *actor) {
 	// Offset to move Center of Mass make rotational motion more significant
 	NiPoint3 target = (targetRot * NiPoint3(cogOffsetX, cogOffsetY, cogOffsetZ)) + origWorldPos;
 
-	// TODO: left and right with same parents transforms should be different... example: the butt
-	// Relative Left
-	//if (obj->m_localTransform.pos.x < 0.0) {
-	//}
-	//// Relative Right
-	//else {
-	//	target = (obj->m_worldTransform.rot *
-	//		(obj->m_localTransform.pos + NiPoint3(0, 0, 0))) + obj->m_parent->m_worldTransform.pos;
-	//}
 
 #if DEBUG
 	logger.error("World Position: ");
@@ -309,20 +303,23 @@ void Thing::update(Actor *actor) {
 
 		NiMatrix43 invRot;
 
-		if (obj->m_name == BSFixedString("Breast_CBP_R_02")) {
-			NiMatrix43 standardRot;
-			standardRot.SetEulerAngles(0, PI, 0);
-			invRot = standardRot * obj->m_parent->m_worldTransform.rot;
-		}
-		else if (obj->m_name == BSFixedString("Breast_CBP_L_02")) {
+		if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
 #if DEBUG
 			logger.error("FG Breasts Transform invRot\n");
 #endif
-			invRot = obj->m_parent->m_worldTransform.rot;
+			NiMatrix43 standardRot;
+			standardRot.SetEulerAngles(rotationX * DEG_TO_RAD,
+										rotationY * DEG_TO_RAD,
+										rotationZ * DEG_TO_RAD);
+			invRot = standardRot * obj->m_parent->m_worldTransform.rot;
 		}
 		else {
 			//invRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose();
-			invRot = obj->m_parent->m_worldTransform.rot;
+			NiMatrix43 standardRot;
+			standardRot.SetEulerAngles(rotationX * DEG_TO_RAD,
+				rotationY * DEG_TO_RAD,
+				rotationZ * DEG_TO_RAD);
+			invRot = standardRot * obj->m_parent->m_worldTransform.rot;
 		}
 
 		auto localDiff = NiPoint3(diff.x * linearX,

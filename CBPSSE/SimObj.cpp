@@ -10,9 +10,9 @@ enum femaleBodyType {CBBE_BODY, FG_BODY};
 const char *leftScrotumName_BT2 = "Penis_Balls_CBP_01";
 const char *rightScrotumName_BT2 = "Penis_Balls_CBP_02";
 
-std::unordered_map<const char*, std::string> configMap;
+//std::unordered_map<const char*, std::string> configMap;
 
-std::vector<const char *> femaleBones;
+std::vector<std::string> femaleBones;
 
 SimObj::SimObj(Actor *actor, config_t &config)
 	: things(4){
@@ -23,7 +23,7 @@ SimObj::~SimObj() {
 }
 
 
-bool SimObj::bind(Actor *actor, std::vector<const char *>& boneNames, config_t &config)
+bool SimObj::bind(Actor *actor, std::vector<std::string>& boneNames, config_t &config)
 {
 	logger.error("bind\n");
 
@@ -33,8 +33,9 @@ bool SimObj::bind(Actor *actor, std::vector<const char *>& boneNames, config_t &
 		bound = true;
 
 		things.clear();
-		for (const char * &b : boneNames) {
-			BSFixedString cs(b);
+		for (std::string b : boneNames) {
+			const char* bone_c_str = b.c_str();
+			BSFixedString cs(bone_c_str);
 			auto bone = loadedData->rootNode->GetObjectByName(&cs);
 			if (!bone) {
 				logger.info("Failed to find Bone %s for actor %08x\n", b, actor->formID);
@@ -69,11 +70,11 @@ void SimObj::update(Actor *actor) {
 }
 
 bool SimObj::updateConfig(config_t & config) {
-	for (auto &t : things) {
-		std::string &section = configMap[t.first];
-		//logger.info("updateConfig in SimObj: %s, %s\n", section, t.first);
-		auto &centry = config[section];
-		t.second.updateConfig(centry);
+	for (auto &thing : things) {
+		std::string &boneName = std::string(thing.first);
+		logger.info("updateConfig in SimObj: %s, %s\n", boneName, thing.first);
+		//auto &centry = config[section];
+		thing.second.updateConfig(config[boneName]);
 	}
 	return true;
 }

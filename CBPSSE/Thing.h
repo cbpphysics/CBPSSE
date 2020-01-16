@@ -34,6 +34,11 @@ public:
 	float rotationalX = 0.1;
 	float rotationalY = 0.1;
 	float rotationalZ = 0.1;
+
+	float rotationX = 0.0;
+	float rotationY = 0.0;
+	float rotationZ = 0.0;
+
 	float timeStep = 1.0f;
 	bool fusionGirlEnabled;
 
