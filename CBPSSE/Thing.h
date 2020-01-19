@@ -6,49 +6,46 @@
 #include "config.h"
 
 class Thing {
-	BSFixedString boneName;
-	NiPoint3 oldWorldPos;
-	NiPoint3 velocity;
-	//NiPoint3 origLocalPos;
-	//NiMatrix43 origLocalRot;
-	clock_t time;
+    BSFixedString boneName;
+    NiPoint3 oldWorldPos;
+    NiPoint3 velocity;
+    clock_t time;
 
 public:
-	float stiffness = 0.5f;
-	float stiffness2 = 0.0f;
-	float damping = 0.2f;
-	float maxOffsetX = 5.0f;
-	float maxOffsetY = 5.0f;
-	float maxOffsetZ = 5.0f;
-	float cogOffsetX = 0.0f;
-	float cogOffsetY = 0.0f;
-	float cogOffsetZ = 0.0f;
+    float stiffness = 0.5f;
+    float stiffness2 = 0.0f;
+    float damping = 0.2f;
+    float maxOffsetX = 5.0f;
+    float maxOffsetY = 5.0f;
+    float maxOffsetZ = 5.0f;
+    float cogOffsetX = 0.0f;
+    float cogOffsetY = 0.0f;
+    float cogOffsetZ = 0.0f;
 
-	float gravityBias = 0.0f;
-	float gravityCorrection = 0.0f;
-	//float zOffset = 0.0f;	// Computed based on GravityBias value
-	float timeTick = 4.0f;
-	float linearX = 0;
-	float linearY = 0;
-	float linearZ = 0;
-	float rotationalX = 0.1;
-	float rotationalY = 0.1;
-	float rotationalZ = 0.1;
+    float gravityBias = 0.0f;
+    float gravityCorrection = 0.0f;
+    float timeTick = 4.0f;
+    float linearX = 0;
+    float linearY = 0;
+    float linearZ = 0;
+    float rotationalX = 0.1;
+    float rotationalY = 0.1;
+    float rotationalZ = 0.1;
 
-	float rotationX = 0.0;
-	float rotationY = 0.0;
-	float rotationZ = 0.0;
+    float rotationX = 0.0;
+    float rotationY = 0.0;
+    float rotationZ = 0.0;
 
-	float timeStep = 1.0f;
-	bool fusionGirlEnabled;
+    float timeStep = 1.0f;
+    bool fusionGirlEnabled;
 
-	Thing(NiAVObject *obj, BSFixedString &name);
-	~Thing();
+    Thing(NiAVObject *obj, BSFixedString &name);
+    ~Thing();
 
-	void updateConfig(configEntry_t &centry);
-	void dump();
+    void updateConfig(configEntry_t &centry);
+    void dump();
 
-	void update(Actor *actor);	
-	void reset();
+    void update(Actor *actor);	
+    void reset();
 
 };

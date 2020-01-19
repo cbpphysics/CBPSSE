@@ -147,11 +147,11 @@ renderHook orender = nullptr;
 void scaleTest();
 UINT64 __cdecl Render(void *This, UINT64 arg)
 {
-	//logger.error("This is called\n");
-	//logger.error("orender = %016llx\n", orender);
-	scaleTest();
-	return orender(This, arg);
-	//return 0;
+    //logger.error("This is called\n");
+    //logger.error("orender = %016llx\n", orender);
+    scaleTest();
+    return orender(This, arg);
+    //return 0;
 }
 
 //RelocPtr <void *> render(0xD69720);
@@ -170,11 +170,11 @@ RelocPtr <void*> ProcessEventQueue_Internal(0x0211CF80);
 
 DetourXS renderDetour;
 void DoHook() {
-	logger.info("Attempting Game Hook\n");
-	// Useful for finding the addresses
-	//CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
+    logger.info("Attempting Game Hook\n");
+    // Useful for finding the addresses
+    //CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
 
-	//renderDetour.Create(render.GetPtr(), Render, &(LPVOID)orender);
-	renderDetour.Create((LPVOID)ProcessEventQueue_Internal.GetPtr(), Render, &(LPVOID)orender);
-	//orender = (renderHook)renderDetour.GetTrampoline();
+    //renderDetour.Create(render.GetPtr(), Render, &(LPVOID)orender);
+    renderDetour.Create((LPVOID)ProcessEventQueue_Internal.GetPtr(), Render, &(LPVOID)orender);
+    //orender = (renderHook)renderDetour.GetTrampoline();
 }

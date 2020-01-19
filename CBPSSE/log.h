@@ -3,11 +3,11 @@
 
 class Logger {
 public:
-	Logger(const char* fname);
-	void info(const char* args...);	
-	void error(const char* args...);
+    Logger(const char* fname);
+    void info(const char* args...);	
+    void error(const char* args...);
 
-	FILE *handle;
+    FILE *handle;
 };
 
 extern Logger logger;
