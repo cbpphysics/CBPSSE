@@ -22,7 +22,6 @@ public:
 
 };
 
-
 extern std::vector<std::string> boneNames;
 extern std::unordered_map<std::string, std::string> configMap;
 extern std::unordered_map<std::string, std::string> configMapArmor;

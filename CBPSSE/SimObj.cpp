@@ -5,9 +5,6 @@
 #include "log.h"
 
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
-const char *leftScrotumName_BT2 = "Penis_Balls_CBP_01";
-const char *rightScrotumName_BT2 = "Penis_Balls_CBP_02";
-
 std::vector<std::string> boneNames;
 
 SimObj::SimObj(Actor *actor, config_t &config)
@@ -22,7 +19,6 @@ SimObj::~SimObj() {
 bool SimObj::bind(Actor *actor, std::vector<std::string>& boneNames, config_t &config)
 {
 //	logger.error("bind\n");
-
 
     auto loadedData = actor->unkF0;
     if (loadedData && loadedData->rootNode) {
@@ -53,7 +49,6 @@ bool SimObj::actorValid(Actor *actor) {
         return true;
     return false;
 }
-
 
 void SimObj::update(Actor *actor) {
     if (!bound)

@@ -198,14 +198,20 @@ void updateActors() {
         else {
             auto &obj = objIterator->second;
             if (obj.isBound() &&
-                a.isInPowerArmor() &&
+                a.IsInPowerArmor() &&
                 (!playerOnly || (a.actor->formID == 0x14 && playerOnly)) &&
-                (!maleOnly || (IsActorMale(a.actor) && maleOnly)) &&
-                (!femaleOnly || (!IsActorMale(a.actor) && femaleOnly))
+                (!maleOnly || (a.IsMale() && maleOnly)) &&
+                (!femaleOnly || (!a.IsMale() && femaleOnly))
                 ) {
                 obj.update(a.actor);
-            } else {
-                obj.bind(a.actor, boneNames, config);
+            }
+            else {
+                if (a.IsTorsoArmorEquipped()) {
+                    obj.bind(a.actor, boneNames, configArmor);
+                }
+                else {
+                    obj.bind(a.actor, boneNames, config);
+                }
             }
         }
     }

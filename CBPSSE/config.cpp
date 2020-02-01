@@ -127,15 +127,3 @@ void dumpConfigtoLog()
         }
     }
 }
-
-bool IsActorMale(Actor* actor)
-{
-    TESNPC* actorNPC = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
-
-    auto npcSex = actorNPC ? CALL_MEMBER_FN(actorNPC, GetSex)() : 1;
-
-    if (npcSex == 0) //Actor is male
-        return true;
-    else
-        return false;
-}

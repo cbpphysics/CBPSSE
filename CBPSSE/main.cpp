@@ -141,9 +141,6 @@ extern "C"
         logger.error("CBP Load Complete\n");
         return true;
     }
-
-
-
 };
 
 BOOL WINAPI DllMain(

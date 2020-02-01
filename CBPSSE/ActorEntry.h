@@ -6,6 +6,7 @@ class ActorEntry {
     UInt32 id;
     Actor* actor;
 
-    bool isInPowerArmor();
+    bool IsInPowerArmor();
     bool IsTorsoArmorEquipped();
+    bool IsMale();
 };
