@@ -1,77 +1,131 @@
-#include "Thing.h"
+#include "config.h"
+#include "INIReader.h"
 #include "log.h"
 #include "SimObj.h"
-#include <unordered_map>
-#include <string>
-#include "config.h"
+#include "Thing.h"
+
+#include <iostream>
 #include <set>
+#include <string>
+#include <unordered_map>
 
 #include "f4se/GameObjects.h"
 #include "f4se/GameRTTI.h"
 #include "f4se_common/Utilities.h"
 
+#define DEBUG 0
 #pragma warning(disable : 4996)
 
 int configReloadCount = 60;
 bool playerOnly = false;
 bool femaleOnly = false;
 bool maleOnly = false;
+bool detectArmor = false;
 
 config_t config;
-
-
-//const char* leftBreastName_FG = "Breast_CBP_L_02";
-//const char* rightBreastName_FG = "Breast_CBP_R_02";
-//const char* leftButtName_FG = "Butt_CBP_L_01";
-//const char* rightButtName_FG = "Butt_CBP_R_01";
-//
-//const char* leftBreastName_CBBE = "LBreast_skin";
-//const char* rightBreastName_CBBE = "RBreast_skin";
-//const char* leftButtName_CBBE = "LButtFat_skin";
-//const char* rightButtName_CBBE = "RButtFat_skin";
+config_t configArmor;
+configOverrides_t configOverrides;
 
 void loadConfig() {
-    char buffer[1024];
+    logger.info("loadConfig\n");
+    boneNames.clear();
     std::set<std::string> bonesSet;
-    //logger.info("loadConfig\n");
-    FILE *fh = fopen("Data\\F4SE\\Plugins\\CBPConfig.txt", "r");
-    if (!fh) {
-        logger.error("Failed to open config file CBPConfig.txt\n");
-        //Console_Print("Failed to open config file CBPConfig.txt");
-        configReloadCount = 0;
-        return;
-    }
 
-    //Console_Print("Reading CBP Config");
-    // Rewrite this eventually
     config.clear();
-    do {
-        auto str = fgets(buffer, 1023, fh);
-        //logger.error("str %s\n", str);
-        if (str && strlen(str) > 1) {
-            if (str[0] != '#') {
-                char *tok0 = strtok(str, ".");
-                char *tok1 = strtok(NULL, " ");
-                char *tok2 = strtok(NULL, " ");
 
-                if (tok0 && tok1 && tok2) {
-                    config[std::string(tok0)][std::string(tok1)] = atof(tok2);
-                }
-                if (std::string(tok0) != "Tuning" && std::string(tok0) != "General") {
-                    boneNames.push_back(std::string(tok0));
+    // Note: Using INIReader results in a slight double read
+    INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
+    if (configReader.ParseError() < 0) {
+        logger.error("Can't load 'ocbp.ini'\n");
+    }
+    logger.error("Reading CBP Config\n");
+
+    // Read general settings
+    playerOnly = configReader.GetBoolean("General", "playerOnly", false);
+    femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
+    maleOnly = configReader.GetBoolean("General", "maleOnly", false);
+    detectArmor = configReader.GetBoolean("General", "detectArmor", false);
+    configReloadCount = configReader.GetInteger("Tuning", "rate", 0);
+
+    // Read sections
+    auto sections = configReader.Sections();
+    for (auto sectionIt = sections.begin(); sectionIt != sections.end(); ++sectionIt) {
+
+        // Split for override section check
+        auto overrideStr = std::string("Override:");
+        auto splitStr = std::mismatch(overrideStr.begin(), overrideStr.end(), sectionIt->begin());
+
+        if (*sectionIt == std::string("Attach")) {
+            // Get section contents
+            auto sectionMap = configReader.Section(*sectionIt);
+            for (auto& valuesIter : sectionMap) {
+                auto& boneName = valuesIter.first;
+                auto& attachName = valuesIter.second;
+                boneNames.push_back(boneName);
+                // Find specified bone section and insert map values into config
+                if (sections.find(attachName) != sections.end()) {
+                    auto attachMapSection = configReader.Section(attachName);
+                    for (auto& attachIter : attachMapSection) {
+                        auto& keyName = attachIter.first;
+                        config[boneName][keyName] = configReader.GetFloat(attachName, keyName, 0.0);
+                    }
                 }
             }
         }
-    } while (!feof(fh));
-    fclose(fh);
+        else if (*sectionIt == std::string("Attach.A") && detectArmor) {
+            // Get section contents
+            auto sectionMap = configReader.Section(*sectionIt);
+            for (auto &valuesIter : sectionMap) {
+                auto &boneName = valuesIter.first;
+                auto &attachName = valuesIter.second;
+                boneNames.push_back(boneName);
+                // Find specified bone section and insert map values into configArmor
+                if (sections.find(attachName) != sections.end()) {
+                    auto attachMapSection = configReader.Section(attachName);
+                    for (auto &attachIter : attachMapSection) {
+                        auto& keyName = attachIter.first;
+                        configArmor[boneName][keyName] = configReader.GetFloat(attachName, keyName, 0.0);
+                    }
+                }
+            }
+        }
+        else if (splitStr.first == overrideStr.end()) {
+            // If section name is prefixed with "Override:", grab other half of name for bone
+            auto boneName = std::string(splitStr.second, sectionIt->end());
+
+            // Get section contents
+            auto sectionMap = configReader.Section(*sectionIt); 
+            for (auto &valuesIt : sectionMap) {
+                configOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionIt, valuesIt.first, 0.0);
+            }
+        }
+    }
+
+    // replace configs with override settings (if any)
+    for (auto &boneIter : configOverrides) {
+        if (config.count(boneIter.first) > 0) {
+            for (auto settingIter : boneIter.second) {
+                config[boneIter.first][settingIter.first] = settingIter.second;
+            }
+        }
+    }
+
+    // Remove duplicate entries
     bonesSet = std::set<std::string>(boneNames.begin(), boneNames.end());
     boneNames.assign(bonesSet.begin(), bonesSet.end());
 
-    playerOnly = config["General"]["playerOnly"] == 1;
-    femaleOnly = config["General"]["femaleOnly"] == 1;
-    maleOnly = config["General"]["maleOnly"] == 1;
-    configReloadCount = config["Tuning"]["rate"];
-    
+    logger.error("Finished CBP Config\n");
+}
+
+void dumpConfigtoLog()
+{
+    // Log contents of config
+    for (auto section : config) {
+        logger.info("[%s]\n", section.first.c_str());
+        for (auto setting : section.second) {
+            logger.info("%s=%f\n", setting.first.c_str(), setting.second);
+        }
+    }
 }
 
 bool IsActorMale(Actor* actor)

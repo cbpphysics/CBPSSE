@@ -60,6 +60,15 @@
     <ClInclude Include="..\f4se\f4se\NiTypes.h">
       <Filter>Header Files\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\f4se\f4se\GameExtraData.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INIReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp">
@@ -106,6 +115,12 @@
     </ClCompile>
     <ClCompile Include="..\f4se\f4se\NiTypes.cpp">
       <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\GameExtraData.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="ActorEntry.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

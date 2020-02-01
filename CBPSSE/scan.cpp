@@ -1,5 +1,5 @@
 #pragma once
-
+#define DEBUG
 
 #include <cstdlib>
 #include <cstdio>
@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#include "ActorEntry.h"
 #include "log.h"
 #include "Thing.h"
 #include "config.h"
@@ -35,7 +36,7 @@
 #include "f4se/GameThreads.h"
 #include "f4se/PluginAPI.h"
 #include "f4se/GameStreams.h"
-
+#include "f4se/GameExtraData.h"
 
 #pragma warning(disable : 4996)
 
@@ -115,11 +116,6 @@ std::unordered_map<UInt32, SimObj> actors;
 TESObjectCELL *curCell = nullptr;
 
 
-struct ActorEntry {
-    UInt32 id;
-    Actor *actor;
-};
-
 void updateActors() {
     //LARGE_INTEGER startingTime, endingTime, elapsedMicroseconds;
     //LARGE_INTEGER frequency;
@@ -151,22 +147,18 @@ void updateActors() {
                 auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
                 if (actor && actor->unkF0) {
                     auto soIt = actors.find(actor->formID);
-                    if ((!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
-                        (!maleOnly   || (IsActorMale(actor)    && maleOnly)) &&
-                        (!femaleOnly || (!IsActorMale(actor)   && femaleOnly))) { // design needs to be changed to allow config changes on the fly
-                        if (soIt == actors.end()) {
-                            logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
-                            //logger.info("%s\n", actor->unk08-> & 1);
-                            //logger.info("%s\n", actor->race->textureModel[1].GetModelName());
-                            auto obj = SimObj(actor, config, boneNames.size());
-                            if (obj.actorValid(actor)) {
-                                actors.emplace(actor->formID, obj);
-                                actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
-                            }
-                        }
-                        else if (soIt->second.actorValid(actor)) {
+                    if (soIt == actors.end()) {
+                        logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
+                        //logger.info("%s\n", actor->unk08-> & 1);
+                        //logger.info("%s\n", actor->race->textureModel[1].GetModelName());
+                        auto obj = SimObj(actor, config);
+                        if (obj.actorValid(actor)) {
+                            actors.emplace(actor->formID, obj);
                             actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                         }
+                    }
+                    else if (soIt->second.actorValid(actor)) {
+                        actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                     }
                 }
             }
@@ -202,9 +194,15 @@ void updateActors() {
         auto objIterator = actors.find(a.id);
         if (objIterator == actors.end()) {
             //logger.error("Sim Object not found in tracked actors\n");
-        } else {
+        }
+        else {
             auto &obj = objIterator->second;
-            if (obj.isBound()) {
+            if (obj.isBound() &&
+                a.isInPowerArmor() &&
+                (!playerOnly || (a.actor->formID == 0x14 && playerOnly)) &&
+                (!maleOnly || (IsActorMale(a.actor) && maleOnly)) &&
+                (!femaleOnly || (!IsActorMale(a.actor) && femaleOnly))
+                ) {
                 obj.update(a.actor);
             } else {
                 obj.bind(a.actor, boneNames, config);

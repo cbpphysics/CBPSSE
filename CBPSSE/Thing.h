@@ -32,9 +32,9 @@ public:
     float rotationalY = 0.1;
     float rotationalZ = 0.1;
 
-    float rotationX = 0.0;
-    float rotationY = 0.0;
-    float rotationZ = 0.0;
+    float rotateLinearX = 0.0;
+    float rotateLinearY = 0.0;
+    float rotateLinearZ = 0.0;
 
     float timeStep = 1.0f;
     bool fusionGirlEnabled;
@@ -43,9 +43,9 @@ public:
     ~Thing();
 
     void updateConfig(configEntry_t &centry);
-    void dump();
-
     void update(Actor *actor);	
     void reset();
 
+    void showPos(NiPoint3& p);
+    void showRot(NiMatrix43& r);
 };

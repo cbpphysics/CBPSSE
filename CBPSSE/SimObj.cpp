@@ -10,9 +10,8 @@ const char *rightScrotumName_BT2 = "Penis_Balls_CBP_02";
 
 std::vector<std::string> boneNames;
 
-SimObj::SimObj(Actor *actor, config_t &config, int num_things) {
-//    : things(num_things){
-
+SimObj::SimObj(Actor *actor, config_t &config)
+    : things(4) {
     id = actor->formID;
 }
 
@@ -37,7 +36,7 @@ bool SimObj::bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
             if (!bone) {
                 logger.info("Failed to find Bone %s for actor %08x\n", b, actor->formID);
             } else {
-                logger.info("Doing Bone %s for actor %08x\n", b, actor->formID);
+                //logger.info("Doing Bone %s for actor %08x\n", b, actor->formID);
                 things.emplace(b, Thing(bone, cs));
             }
         }
@@ -68,9 +67,7 @@ void SimObj::update(Actor *actor) {
 
 bool SimObj::updateConfig(config_t & config) {
     for (auto &thing : things) {
-        std::string &boneName = std::string(thing.first);
-        //logger.info("updateConfig in SimObj: %s, %s\n", boneName, thing.first);
-        thing.second.updateConfig(config[boneName]);
+        thing.second.updateConfig(config[std::string(thing.first)]);
     }
     return true;
 }

@@ -10,8 +10,22 @@ constexpr auto DEG_TO_RAD = 3.14159265 / 180;
 
 std::unordered_map<const char*, NiPoint3> origLocalPos;
 std::unordered_map<const char*, NiMatrix43> origLocalRot;
+
+std::unordered_map<const char*, NiPoint3>::const_iterator origLocalPos_iter;
+std::unordered_map<const char*, NiMatrix43>::const_iterator origLocalRot_iter;
+
 const char * skeletonNif_boneName = "skeleton.nif";
 const char* COM_boneName = "COM";
+
+void Thing::showPos(NiPoint3& p) {
+    logger.info("%8.4f %8.4f %8.4f\n", p.x, p.y, p.z);
+}
+
+void Thing::showRot(NiMatrix43& r) {
+    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[0][0], r.data[0][1], r.data[0][2], r.data[0][3]);
+    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[1][0], r.data[1][1], r.data[1][2], r.data[1][3]);
+    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[2][0], r.data[2][1], r.data[2][2], r.data[2][3]);
+}
 
 Thing::Thing(NiAVObject* obj, BSFixedString& name)
     : boneName(name)
@@ -20,21 +34,27 @@ Thing::Thing(NiAVObject* obj, BSFixedString& name)
     oldWorldPos = obj->m_worldTransform.pos;
 
     time = clock();
+
+    // Save the bones original local values if it already hasn't
+    origLocalPos_iter = origLocalPos.find(boneName.c_str());
+    origLocalRot_iter = origLocalRot.find(boneName.c_str());
+
+    if (origLocalPos_iter == origLocalPos.end()) {
+        logger.error("for bone %s: ", boneName.c_str());
+        logger.error("firstRun pos Set: ");
+        origLocalPos.emplace(boneName.c_str(), obj->m_localTransform.pos);
+        showPos(obj->m_localTransform.pos);
+    }
+    if (origLocalRot_iter == origLocalRot.end()) {
+        logger.error("for bone %s: ", boneName.c_str());
+        logger.error("firstRun rot Set:\n");
+        origLocalRot.emplace(boneName.c_str(), obj->m_localTransform.rot);
+        showRot(obj->m_localTransform.rot);
+    }
 }
 
 Thing::~Thing() {
 }
-
-void showPos(NiPoint3 &p) {
-    logger.info("%8.4f %8.4f %8.4f\n", p.x, p.y, p.z);
-}
-
-void showRot(NiMatrix43 &r) {
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[0][0], r.data[0][1], r.data[0][2], r.data[0][3]);
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[1][0], r.data[1][1], r.data[1][2], r.data[1][3]);
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[2][0], r.data[2][1], r.data[2][2], r.data[2][3]);
-}
-
 
 float solveQuad(float a, float b, float c) {
     float k1 = (-b + sqrtf(b*b - 4*a*c)) / (2 * a);
@@ -42,9 +62,6 @@ float solveQuad(float a, float b, float c) {
     //logger.error("k2 = %f\n", k2);
     return k1;
 }
-
-
-
 
 void Thing::updateConfig(configEntry_t & centry) {
     stiffness = centry["stiffness"];
@@ -60,9 +77,9 @@ void Thing::updateConfig(configEntry_t & centry) {
     rotationalX = centry["rotationalX"];
     rotationalY = centry["rotationalY"];
     rotationalZ = centry["rotationalZ"];
-    rotationX = centry["rotationX"];
-    rotationY = centry["rotationY"];
-    rotationZ = centry["rotationZ"];
+    rotateLinearX = centry["rotateLinearX"];
+    rotateLinearY = centry["rotateLinearY"];
+    rotateLinearZ = centry["rotateLinearZ"];
     // Optional entries for backwards compatability 
     if (centry.find("timeStep") != centry.end())
         timeStep = centry["timeStep"];
@@ -78,15 +95,8 @@ void Thing::updateConfig(configEntry_t & centry) {
         timeTick = 1;
 
     //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
-
     //logger.error("z offset = %f\n", solveQuad(stiffness2, stiffness, -gravityBias));
 }
-
-void Thing::dump() {
-    //showPos(obj->m_worldTransform.pos);
-    //showPos(obj->m_localTransform.pos);
-}
-
 
 static float clamp(float val, float min, float max) {
     if (val < min) return min;
@@ -104,6 +114,12 @@ template <typename T> int sgn(T val) {
 }
 
 void Thing::update(Actor *actor) {
+    /*LARGE_INTEGER startingTime, endingTime, elapsedMicroseconds;
+    LARGE_INTEGER frequency;
+
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&startingTime);*/
+
     auto newTime = clock();
     auto deltaT = newTime - time;
 
@@ -153,22 +169,6 @@ void Thing::update(Actor *actor) {
         sceneObj = sceneObj->m_parent;	
     }
 #endif
-
-    // TODO rewrite these for performance
-    // Save the bone's original local position if it already hasn't
-    if (origLocalPos.find(boneName.c_str()) == origLocalPos.end()) {
-        logger.error("for actor %08x, bone %s: ", actor->formID, boneName.c_str());
-        logger.error("firstRun pos Set: ");
-        origLocalPos.emplace(boneName.c_str(), obj->m_localTransform.pos);
-        showPos(obj->m_localTransform.pos);
-    }
-    // Save the bone's original local rotation if it already hasn't
-    if (origLocalRot.find(boneName.c_str()) == origLocalRot.end()) {
-        logger.error("for actor %08x, bone %s: ", actor->formID, boneName.c_str());
-        logger.error("firstRun rot Set:\n");
-        origLocalRot.emplace(boneName.c_str(), obj->m_localTransform.rot);
-        showRot(obj->m_localTransform.rot);
-    }
 
     auto skeletonObj = obj;
     NiAVObject * comObj;
@@ -303,17 +303,17 @@ void Thing::update(Actor *actor) {
 
         if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
             NiMatrix43 standardRot;
-            standardRot.SetEulerAngles(rotationX * DEG_TO_RAD,
-                                       rotationY * DEG_TO_RAD,
-                                       rotationZ * DEG_TO_RAD);
+            standardRot.SetEulerAngles(rotateLinearX * DEG_TO_RAD,
+                                       rotateLinearY * DEG_TO_RAD,
+                                       rotateLinearZ * DEG_TO_RAD);
             invRot = standardRot * obj->m_parent->m_worldTransform.rot;
         }
         else {
             //invRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose();
             NiMatrix43 standardRot;
-            standardRot.SetEulerAngles(rotationX * DEG_TO_RAD,
-                                       rotationY * DEG_TO_RAD,
-                                       rotationZ * DEG_TO_RAD);
+            standardRot.SetEulerAngles(rotateLinearX * DEG_TO_RAD,
+                                       rotateLinearY * DEG_TO_RAD,
+                                       rotateLinearZ * DEG_TO_RAD);
             invRot = standardRot * obj->m_parent->m_worldTransform.rot;
         }
 
@@ -370,6 +370,11 @@ void Thing::update(Actor *actor) {
     logger.error("end update()\n");
 #endif
 
-
+    //logger.error("end update()\n");
+    /*QueryPerformanceCounter(&endingTime);
+    elapsedMicroseconds.QuadPart = endingTime.QuadPart - startingTime.QuadPart;
+    elapsedMicroseconds.QuadPart *= 1000000000LL;
+    elapsedMicroseconds.QuadPart /= frequency.QuadPart;
+    _MESSAGE("Thing.update() Update Time = %lld ns\n", elapsedMicroseconds.QuadPart);*/
 
 }

@@ -11,7 +11,7 @@ class SimObj {
     bool bound = false;
 public:
     std::unordered_map<std::string, Thing> things;
-    SimObj(Actor *actor, config_t &config, int num_things);
+    SimObj(Actor *actor, config_t &config);
     SimObj() {}
     ~SimObj();
     bool bind(Actor *actor, std::vector<std::string> &boneNames, config_t &config);
@@ -24,4 +24,5 @@ public:
 
 
 extern std::vector<std::string> boneNames;
-//extern std::unordered_map<const char*, std::string> configMap;
+extern std::unordered_map<std::string, std::string> configMap;
+extern std::unordered_map<std::string, std::string> configMapArmor;
