@@ -5,8 +5,4 @@ class ActorEntry {
     public:
     UInt32 id;
     Actor* actor;
-
-    bool IsInPowerArmor();
-    bool IsTorsoArmorEquipped();
-    bool IsMale();
 };

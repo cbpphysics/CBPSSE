@@ -16,4 +16,4 @@ extern int configReloadCount;
 extern config_t config;
 extern config_t configArmor;
 
-void loadConfig();
+bool loadConfig();

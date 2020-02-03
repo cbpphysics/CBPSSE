@@ -71,7 +71,6 @@ void Thing::updateConfig(configEntry_t & centry) {
     maxOffsetX = centry["maxoffsetX"];
     maxOffsetY = centry["maxoffsetY"];
     maxOffsetZ = centry["maxoffsetZ"];
-    timeTick = centry["timetick"];
     linearX = centry["linearX"];
     linearY = centry["linearY"];
     linearZ = centry["linearZ"];
@@ -81,17 +80,16 @@ void Thing::updateConfig(configEntry_t & centry) {
     rotateLinearX = centry["rotateLinearX"];
     rotateLinearY = centry["rotateLinearY"];
     rotateLinearZ = centry["rotateLinearZ"];
-    // Optional entries for backwards compatability 
+    timeTick = centry["timetick"];
     if (centry.find("timeStep") != centry.end())
         timeStep = centry["timeStep"];
     else 
-        timeStep = 1.0f;
+        timeStep = 0.016f;
     gravityBias = centry["gravityBias"];
     gravityCorrection = centry["gravityCorrection"];
     cogOffsetY = centry["cogOffsetY"];
     cogOffsetX = centry["cogOffsetX"];
     cogOffsetZ = centry["cogOffsetZ"];
-    fusionGirlEnabled = centry["FG"] == 1.0;
     if (timeTick <= 1)
         timeTick = 1;
 
@@ -318,11 +316,11 @@ void Thing::update(Actor *actor) {
             invRot = standardRot * obj->m_parent->m_worldTransform.rot;
         }
 
-        auto localDiff = NiPoint3(diff.x * linearX,
-                                  diff.y * linearY,
-                                  diff.z * linearZ);
+        auto localDiff = invRot * diff;
+        localDiff.x *= linearX;
+        localDiff.y *= linearY;
+        localDiff.z *= linearZ;
         auto rotDiff = localDiff;
-        localDiff = invRot * localDiff;
 
         oldWorldPos = diff + target;
 #if DEBUG

@@ -25,19 +25,18 @@ public:
     float gravityBias = 0.0f;
     float gravityCorrection = 0.0f;
     float timeTick = 4.0f;
-    float linearX = 0;
-    float linearY = 0;
-    float linearZ = 0;
-    float rotationalX = 0.1;
-    float rotationalY = 0.1;
-    float rotationalZ = 0.1;
+    float linearX = 0.0f;
+    float linearY = 0.0f;
+    float linearZ = 0.0f;
+    float rotationalX = 0.0f;
+    float rotationalY = 0.0f;
+    float rotationalZ = 0.0f;
 
-    float rotateLinearX = 0.0;
-    float rotateLinearY = 0.0;
-    float rotateLinearZ = 0.0;
+    float rotateLinearX = 0.0f;
+    float rotateLinearY = 0.0f;
+    float rotateLinearZ = 0.0f;
 
-    float timeStep = 1.0f;
-    bool fusionGirlEnabled;
+    float timeStep = 0.016f;
 
     Thing(NiAVObject *obj, BSFixedString &name);
     ~Thing();

@@ -69,6 +69,9 @@
     <ClInclude Include="INIReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ActorUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp">
@@ -119,7 +122,7 @@
     <ClCompile Include="..\f4se\f4se\GameExtraData.cpp">
       <Filter>Source Files\api</Filter>
     </ClCompile>
-    <ClCompile Include="ActorEntry.cpp">
+    <ClCompile Include="ActorUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

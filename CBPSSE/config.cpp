@@ -26,11 +26,15 @@ config_t config;
 config_t configArmor;
 configOverrides_t configOverrides;
 
-void loadConfig() {
+bool loadConfig() {
+    bool reloadActors = false;
+    auto playerOnlyOld = playerOnly;
+    auto femaleOnlyOld = femaleOnly;
+    auto maleOnlyOld = maleOnly;
+
     logger.info("loadConfig\n");
     boneNames.clear();
     std::set<std::string> bonesSet;
-
     config.clear();
 
     // Note: Using INIReader results in a slight double read
@@ -41,9 +45,13 @@ void loadConfig() {
     logger.error("Reading CBP Config\n");
 
     // Read general settings
+
     playerOnly = configReader.GetBoolean("General", "playerOnly", false);
     femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
     maleOnly = configReader.GetBoolean("General", "maleOnly", false);
+    reloadActors = (playerOnly ^ playerOnlyOld) ||
+                    (femaleOnly ^ femaleOnlyOld) ||
+                    (maleOnly ^ maleOnlyOld);
     detectArmor = configReader.GetBoolean("General", "detectArmor", false);
     configReloadCount = configReader.GetInteger("Tuning", "rate", 0);
 
@@ -115,6 +123,7 @@ void loadConfig() {
     boneNames.assign(bonesSet.begin(), bonesSet.end());
 
     logger.error("Finished CBP Config\n");
+    return reloadActors;
 }
 
 void dumpConfigtoLog()

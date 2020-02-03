@@ -1,11 +1,11 @@
-#include "ActorEntry.h"
+#include "ActorUtils.h"
 #include "f4se/GameExtraData.h"
 #include "f4se/GameObjects.h"
 #include "f4se/GameRTTI.h"
 
-bool ActorEntry::IsMale()
+bool actorUtils::IsActorMale(Actor *actor)
 {
-    TESNPC* actorNPC = DYNAMIC_CAST(this->actor->baseForm, TESForm, TESNPC);
+    TESNPC* actorNPC = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
 
     auto npcSex = actorNPC ? CALL_MEMBER_FN(actorNPC, GetSex)() : 1;
 
@@ -15,17 +15,17 @@ bool ActorEntry::IsMale()
         return false;
 }
 
-bool ActorEntry::IsInPowerArmor() {
-    if (!this->actor)
+bool actorUtils::IsActorInPowerArmor(Actor* actor) {
+    if (!actor)
         return false;
-    return !this->actor->extraDataList->HasType(kExtraData_PowerArmor);
+    return !actor->extraDataList->HasType(kExtraData_PowerArmor);
 }
 
-bool ActorEntry::IsTorsoArmorEquipped() {
+bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
     bool isEquipped = false;
-    if (!this->actor)
+    if (!actor)
         return false;
     // 11 IS ARMOR TORSO SLOT (41 minus 30??)
-    isEquipped = this->actor->equipData->slots[11].item;
+    isEquipped = actor->equipData->slots[11].item;
     return isEquipped;
 }

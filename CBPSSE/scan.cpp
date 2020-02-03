@@ -23,6 +23,7 @@
 #include <unordered_map>
 
 #include "ActorEntry.h"
+#include "ActorUtils.h"
 #include "log.h"
 #include "Thing.h"
 #include "config.h"
@@ -40,6 +41,9 @@
 
 #pragma warning(disable : 4996)
 
+using actorUtils::IsActorMale;
+using actorUtils::IsActorTorsoArmorEquipped;
+using actorUtils::IsActorInPowerArmor;
 
 extern F4SETaskInterface *g_task;
 
@@ -112,7 +116,6 @@ inline void safe_delete(T*& in) {
 
 
 std::unordered_map<UInt32, SimObj> actors;
-
 TESObjectCELL *curCell = nullptr;
 
 
@@ -146,8 +149,13 @@ void updateActors() {
                 // Attempt to get actors
                 auto actor = DYNAMIC_CAST(ref, TESObjectREFR, Actor);
                 if (actor && actor->unkF0) {
+                    // Find if actors is already being tracked
                     auto soIt = actors.find(actor->formID);
-                    if (soIt == actors.end()) {
+                    if (soIt == actors.end() &&
+                        IsActorInPowerArmor(actor) &&
+                        (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
+                        (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
+                        (!femaleOnly || (!IsActorMale(actor) && femaleOnly))) {
                         logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
                         //logger.info("%s\n", actor->unk08-> & 1);
                         //logger.info("%s\n", actor->race->textureModel[1].GetModelName());
@@ -183,9 +191,14 @@ void updateActors() {
     static int count = 0;
     if (configReloadCount && count++ > configReloadCount) {
         count = 0;
-        loadConfig();
+        auto reloadActors = loadConfig();
         for (auto &a : actors) {
             a.second.updateConfig(config);
+        }
+
+        // Clear actors
+        if (reloadActors) {
+            actors.clear();
         }
     }
 
@@ -197,16 +210,11 @@ void updateActors() {
         }
         else {
             auto &obj = objIterator->second;
-            if (obj.isBound() &&
-                a.IsInPowerArmor() &&
-                (!playerOnly || (a.actor->formID == 0x14 && playerOnly)) &&
-                (!maleOnly || (a.IsMale() && maleOnly)) &&
-                (!femaleOnly || (!a.IsMale() && femaleOnly))
-                ) {
+            if (obj.isBound()) {
                 obj.update(a.actor);
             }
             else {
-                if (a.IsTorsoArmorEquipped()) {
+                if (IsActorTorsoArmorEquipped(a.actor)) {
                     obj.bind(a.actor, boneNames, configArmor);
                 }
                 else {

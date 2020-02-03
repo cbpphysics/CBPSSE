@@ -163,6 +163,7 @@
     <ClInclude Include="..\f4se\f4se\NiObjects.h" />
     <ClInclude Include="..\f4se\f4se\NiTypes.h" />
     <ClInclude Include="ActorEntry.h" />
+    <ClInclude Include="ActorUtils.h" />
     <ClInclude Include="INIReader.h" />
     <ClInclude Include="SimObj.h" />
     <ClInclude Include="config.h" />
@@ -179,7 +180,7 @@
     <ClCompile Include="..\f4se\f4se\NiNodes.cpp" />
     <ClCompile Include="..\f4se\f4se\NiObjects.cpp" />
     <ClCompile Include="..\f4se\f4se\NiTypes.cpp" />
-    <ClCompile Include="ActorEntry.cpp" />
+    <ClCompile Include="ActorUtils.cpp" />
     <ClCompile Include="SimObj.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="hookD3D.cpp" />
