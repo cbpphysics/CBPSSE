@@ -80,6 +80,11 @@ void Thing::updateConfig(configEntry_t & centry) {
     rotateLinearX = centry["rotateLinearX"];
     rotateLinearY = centry["rotateLinearY"];
     rotateLinearZ = centry["rotateLinearZ"];
+
+    rotateRotationX = centry["rotateRotationX"];
+    rotateRotationY = centry["rotateRotationY"];
+    rotateRotationZ = centry["rotateRotationZ"];
+
     timeTick = centry["timetick"];
     if (centry.find("timeStep") != centry.end())
         timeStep = centry["timeStep"];
@@ -299,29 +304,28 @@ void Thing::update(Actor *actor) {
         // Convert the world translations into local coordinates
 
         NiMatrix43 invRot;
+        NiMatrix43 rotateLinear;
+        rotateLinear.SetEulerAngles(rotateLinearX * DEG_TO_RAD,
+                                    rotateLinearY * DEG_TO_RAD,
+                                    rotateLinearZ * DEG_TO_RAD);
 
         if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
-            NiMatrix43 standardRot;
-            standardRot.SetEulerAngles(rotateLinearX * DEG_TO_RAD,
-                                       rotateLinearY * DEG_TO_RAD,
-                                       rotateLinearZ * DEG_TO_RAD);
-            invRot = standardRot * obj->m_parent->m_worldTransform.rot;
+            invRot = rotateLinear * obj->m_parent->m_worldTransform.rot;
         }
         else {
             //invRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose();
-            NiMatrix43 standardRot;
-            standardRot.SetEulerAngles(rotateLinearX * DEG_TO_RAD,
-                                       rotateLinearY * DEG_TO_RAD,
-                                       rotateLinearZ * DEG_TO_RAD);
-            invRot = standardRot * obj->m_parent->m_worldTransform.rot;
+            invRot = rotateLinear * obj->m_parent->m_worldTransform.rot;
         }
 
-        auto localDiff = invRot * diff;
+        auto localDiff = diff;
+        localDiff = skeletonObj->m_localTransform.rot * localDiff;
         localDiff.x *= linearX;
         localDiff.y *= linearY;
         localDiff.z *= linearZ;
         auto rotDiff = localDiff;
+        localDiff = skeletonObj->m_localTransform.rot.Transpose() * localDiff;
 
+        localDiff = invRot * localDiff;
         oldWorldPos = diff + target;
 #if DEBUG
         logger.error("invRot x=10 Transformation:");
@@ -361,7 +365,14 @@ void Thing::update(Actor *actor) {
 
 #endif
         // Do rotation.
+        NiMatrix43 rotateRotation;
+        rotateRotation.SetEulerAngles(rotateRotationX * DEG_TO_RAD,
+                                      rotateRotationY * DEG_TO_RAD,
+                                      rotateRotationZ * DEG_TO_RAD);
+
         NiMatrix43 standardRot;
+
+        rotDiff = rotateRotation * rotDiff;
         standardRot.SetEulerAngles(rotDiff.x, rotDiff.y, rotDiff.z);
         obj->m_localTransform.rot = standardRot * origLocalRot.at(boneName.c_str());
     }

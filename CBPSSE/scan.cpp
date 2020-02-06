@@ -215,6 +215,7 @@ void updateActors() {
             }
             else {
                 if (IsActorTorsoArmorEquipped(a.actor)) {
+                    logger.info("torso armor detected on actor %x\n", a.actor->formID);
                     obj.bind(a.actor, boneNames, configArmor);
                 }
                 else {

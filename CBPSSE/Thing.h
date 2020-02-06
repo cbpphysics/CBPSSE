@@ -36,6 +36,10 @@ public:
     float rotateLinearY = 0.0f;
     float rotateLinearZ = 0.0f;
 
+    float rotateRotationX = 0.0f;
+    float rotateRotationY = 0.0f;
+    float rotateRotationZ = 0.0f;
+
     float timeStep = 0.016f;
 
     Thing(NiAVObject *obj, BSFixedString &name);

@@ -27,15 +27,18 @@ config_t configArmor;
 configOverrides_t configOverrides;
 
 bool loadConfig() {
+    logger.info("loadConfig\n");
+
     bool reloadActors = false;
     auto playerOnlyOld = playerOnly;
     auto femaleOnlyOld = femaleOnly;
     auto maleOnlyOld = maleOnly;
-
-    logger.info("loadConfig\n");
-    boneNames.clear();
     std::set<std::string> bonesSet;
+
+    boneNames.clear();
     config.clear();
+    configArmor.clear();
+    configOverrides.clear();
 
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
@@ -45,7 +48,6 @@ bool loadConfig() {
     logger.error("Reading CBP Config\n");
 
     // Read general settings
-
     playerOnly = configReader.GetBoolean("General", "playerOnly", false);
     femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
     maleOnly = configReader.GetBoolean("General", "maleOnly", false);
