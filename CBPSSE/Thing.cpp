@@ -198,17 +198,7 @@ void Thing::update(Actor *actor) {
     showRot(skeletonObj->m_worldTransform.rot);
     //showPos(obj->m_parent->m_worldTransform.rot.Transpose() * obj->m_localTransform.pos);
 #endif
-    NiMatrix43 targetRot;
-    if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
-        targetRot = skeletonObj->m_localTransform.rot.Transpose();
-    }
-    else {
-        //targetRot = skeletonObj->m_localTransform.rot.Transpose() *
-        //			comObj->m_localTransform.rot *
-        //			skeletonObj->m_localTransform.rot *
-        //			obj->m_parent->m_worldTransform.rot.Transpose();
-        targetRot = skeletonObj->m_localTransform.rot.Transpose();
-    }
+    NiMatrix43 targetRot = skeletonObj->m_localTransform.rot.Transpose();
     NiPoint3 origWorldPos = (obj->m_parent->m_worldTransform.rot.Transpose() * origLocalPos.at(boneName.c_str())) +  obj->m_parent->m_worldTransform.pos;
 
     // Offset to move Center of Mass make rotational motion more significant
@@ -309,13 +299,7 @@ void Thing::update(Actor *actor) {
                                     rotateLinearY * DEG_TO_RAD,
                                     rotateLinearZ * DEG_TO_RAD);
 
-        if (obj->m_name == BSFixedString("Breast_CBP_R_02") || obj->m_name == BSFixedString("Breast_CBP_L_02")) {
-            invRot = rotateLinear * obj->m_parent->m_worldTransform.rot;
-        }
-        else {
-            //invRot = obj->m_parent->m_worldTransform.rot * skeletonObj->m_localTransform.rot.Transpose() * comObj->m_localTransform.rot.Transpose();
-            invRot = rotateLinear * obj->m_parent->m_worldTransform.rot;
-        }
+        invRot = rotateLinear * obj->m_parent->m_worldTransform.rot;
 
         auto localDiff = diff;
         localDiff = skeletonObj->m_localTransform.rot * localDiff;
