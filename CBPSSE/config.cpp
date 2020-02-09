@@ -25,6 +25,7 @@ bool detectArmor = false;
 config_t config;
 config_t configArmor;
 configOverrides_t configOverrides;
+configOverrides_t configArmorOverrides;
 
 bool loadConfig() {
     logger.info("loadConfig\n");
@@ -39,6 +40,7 @@ bool loadConfig() {
     config.clear();
     configArmor.clear();
     configOverrides.clear();
+    configArmorOverrides.clear();
 
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
@@ -64,6 +66,9 @@ bool loadConfig() {
         // Split for override section check
         auto overrideStr = std::string("Override:");
         auto splitStr = std::mismatch(overrideStr.begin(), overrideStr.end(), sectionIt->begin());
+
+        auto overrideAStr = std::string("Override.A:");
+        auto splitAStr = std::mismatch(overrideAStr.begin(), overrideAStr.end(), sectionIt->begin());
 
         if (*sectionIt == std::string("Attach")) {
             // Get section contents
@@ -109,6 +114,16 @@ bool loadConfig() {
                 configOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionIt, valuesIt.first, 0.0);
             }
         }
+        else if (splitAStr.first == overrideAStr.end()) {
+            // If section name is prefixed with "Override:", grab other half of name for bone
+            auto boneName = std::string(splitAStr.second, sectionIt->end());
+
+            // Get section contents
+            auto sectionMap = configReader.Section(*sectionIt);
+            for (auto& valuesIt : sectionMap) {
+                configArmorOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionIt, valuesIt.first, 0.0);
+            }
+        }
     }
 
     // replace configs with override settings (if any)
@@ -116,6 +131,15 @@ bool loadConfig() {
         if (config.count(boneIter.first) > 0) {
             for (auto settingIter : boneIter.second) {
                 config[boneIter.first][settingIter.first] = settingIter.second;
+            }
+        }
+    }
+
+    // replace armor configs with override settings (if any)
+    for (auto& boneIter : configArmorOverrides) {
+        if (configArmor.count(boneIter.first) > 0) {
+            for (auto settingIter : boneIter.second) {
+                configArmor[boneIter.first][settingIter.first] = settingIter.second;
             }
         }
     }

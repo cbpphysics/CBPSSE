@@ -4,7 +4,7 @@
 #pragma warning(disable : 4996)
 
 // TODO make better macro
-#define LOG_ON 1
+//#define LOG_ON
 
 Logger::Logger(const char *fname) {
 #ifdef LOG_ON

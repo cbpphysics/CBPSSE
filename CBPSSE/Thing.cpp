@@ -6,8 +6,8 @@
 constexpr auto DEG_TO_RAD = 3.14159265 / 180;
 
 // TODO Make these logger macros
-#define DEBUG 0
-#define TRANSFORM_DEBUG 0
+//#define DEBUG 0
+//#define TRANSFORM_DEBUG 0
 
 std::unordered_map<const char*, NiPoint3> origLocalPos;
 std::unordered_map<const char*, NiMatrix43> origLocalRot;
