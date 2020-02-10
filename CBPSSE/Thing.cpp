@@ -108,8 +108,21 @@ static float clamp(float val, float min, float max) {
     return val;
 }
 
-void Thing::reset() {
+void Thing::reset(Actor *actor) {
+    auto loadedState = actor->unkF0;
+    if (!loadedState || !loadedState->rootNode) {
+        logger.error("No loaded state for actor %08x\n", actor->formID);
+        return;
+    }
+    auto obj = loadedState->rootNode->GetObjectByName(&boneName);
 
+    if (!obj) {
+        logger.error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
+        return;
+    }
+
+    obj->m_localTransform.pos = origLocalPos.at(boneName.c_str());
+    obj->m_localTransform.rot = origLocalRot.at(boneName.c_str());
 }
 
 // Returns 

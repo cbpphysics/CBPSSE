@@ -47,7 +47,7 @@ public:
 
     void updateConfig(configEntry_t &centry);
     void update(Actor *actor);	
-    void reset();
+    void reset(Actor * actor);
 
     void showPos(NiPoint3& p);
     void showRot(NiMatrix43& r);

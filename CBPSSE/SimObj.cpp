@@ -3,6 +3,7 @@
 #include "f4se/GameForms.h"
 #include "f4se/GameRTTI.h"
 #include "log.h"
+#include "PapyrusOCBP.h"
 
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
 std::vector<std::string> boneNames;
@@ -16,7 +17,7 @@ SimObj::~SimObj() {
 }
 
 
-bool SimObj::bind(Actor *actor, std::vector<std::string>& boneNames, config_t &config)
+bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &config)
 {
 //	logger.error("bind\n");
 
@@ -36,13 +37,13 @@ bool SimObj::bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
                 things.emplace(b, Thing(bone, cs));
             }
         }
-        updateConfig(config);
+        UpdateConfig(config);
         return  true;
     }
     return false;
 }
 
-bool SimObj::actorValid(Actor *actor) {
+bool SimObj::ActorValid(Actor *actor) {
     if (actor->flags & TESForm::kFlag_IsDeleted)
         return false;
     if (actor && actor->unkF0 && actor->unkF0->rootNode)
@@ -50,20 +51,29 @@ bool SimObj::actorValid(Actor *actor) {
     return false;
 }
 
-void SimObj::update(Actor *actor) {
+void SimObj::Update(Actor *actor) {
     if (!bound)
         return;
     //logger.error("update\n");
     for (auto &t : things) {
+
+        // TODO bad way to do it
+        //if (boneIgnores.find(actor->formID) != boneIgnores.end()) {
+        //    auto actorBoneMap = boneIgnores.at(actor->formID);
+        //    if (actorBoneMap.find(t.first) != actorBoneMap.end()) {
+        //        if (actorBoneMap.at(t.first)) {
+        //            continue;
+        //        }
+        //    }
+        //}
         t.second.update(actor);
     }
     //logger.error("end SimObj update\n");
 }
 
-bool SimObj::updateConfig(config_t & config) {
+bool SimObj::UpdateConfig(config_t & config) {
     for (auto &thing : things) {
         thing.second.updateConfig(config[std::string(thing.first)]);
     }
     return true;
 }
-

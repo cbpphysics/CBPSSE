@@ -6,7 +6,7 @@
 // TODO make better macro
 //#define LOG_ON
 
-Logger::Logger(const char *fname) {
+CbpLogger::CbpLogger(const char *fname) {
 #ifdef LOG_ON
 	handle = fopen(fname, "a");
 	if (handle) {
@@ -15,7 +15,7 @@ Logger::Logger(const char *fname) {
 #endif
 }
 
-void Logger::info(const char *fmt...) {
+void CbpLogger::info(const char *fmt...) {
 #ifdef LOG_ON
 	if (handle) {
 		va_list argptr;
@@ -27,7 +27,7 @@ void Logger::info(const char *fmt...) {
 #endif
 }
 
-void Logger::error(const char *fmt...) {
+void CbpLogger::error(const char *fmt...) {
 #ifdef LOG_ON
 	if (handle) {
 		va_list argptr;
@@ -39,4 +39,4 @@ void Logger::error(const char *fmt...) {
 #endif
 }
 
-Logger logger("Data\\F4SE\\Plugins\\cbp.log");
+CbpLogger logger("Data\\F4SE\\Plugins\\cbp.log");

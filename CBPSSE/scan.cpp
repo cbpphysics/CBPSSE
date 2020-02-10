@@ -27,6 +27,7 @@
 #include "log.h"
 #include "Thing.h"
 #include "config.h"
+#include "PapyrusOCBP.h"
 #include "SimObj.h"
 #include "f4se/GameRTTI.h"
 #include "f4se/GameForms.h"
@@ -160,12 +161,12 @@ void updateActors() {
                         //logger.info("%s\n", actor->unk08-> & 1);
                         //logger.info("%s\n", actor->race->textureModel[1].GetModelName());
                         auto obj = SimObj(actor, config);
-                        if (obj.actorValid(actor)) {
+                        if (obj.ActorValid(actor)) {
                             actors.emplace(actor->formID, obj);
                             actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                         }
                     }
-                    else if (soIt->second.actorValid(actor)) {
+                    else if (soIt->second.ActorValid(actor)) {
                         actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                     }
                 }
@@ -193,7 +194,7 @@ void updateActors() {
         count = 0;
         auto reloadActors = loadConfig();
         for (auto &a : actors) {
-            a.second.updateConfig(config);
+            a.second.UpdateConfig(config);
         }
 
         // Clear actors
@@ -209,17 +210,24 @@ void updateActors() {
             //logger.error("Sim Object not found in tracked actors\n");
         }
         else {
-            auto &obj = objIterator->second;
-            if (obj.isBound()) {
-                obj.update(a.actor);
-            }
-            else {
-                if (IsActorTorsoArmorEquipped(a.actor)) {
+            auto &simObj = objIterator->second;
+            if (simObj.IsBound()) {
+                if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
                     logger.info("torso armor detected on actor %x\n", a.actor->formID);
-                    obj.bind(a.actor, boneNames, configArmor);
+                    simObj.UpdateConfig(configArmor);
                 }
                 else {
-                    obj.bind(a.actor, boneNames, config);
+                    simObj.UpdateConfig(config);
+                }
+                simObj.Update(a.actor);
+            }
+            else {
+                if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
+                    logger.info("torso armor detected on actor %x\n", a.actor->formID);
+                    simObj.Bind(a.actor, boneNames, configArmor);
+                }
+                else {
+                    simObj.Bind(a.actor, boneNames, config);
                 }
             }
         }

@@ -72,6 +72,27 @@
     <ClInclude Include="ActorUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PapyrusOCBP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\PapyrusArgs.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\PapyrusNativeFunctions.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\PapyrusVM.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\PapyrusValue.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\PapyrusInterfaces.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\f4se\f4se\GameUtilities.h">
+      <Filter>Header Files\api</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp">
@@ -124,6 +145,27 @@
     </ClCompile>
     <ClCompile Include="ActorUtils.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PapyrusOCBP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\PapyrusNativeFunctions.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\PapyrusVM.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\PapyrusArgs.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\PapyrusValue.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\PapyrusInterfaces.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\f4se\f4se\GameUtilities.cpp">
+      <Filter>Source Files\api</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

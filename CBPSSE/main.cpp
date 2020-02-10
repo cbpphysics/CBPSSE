@@ -7,9 +7,10 @@
 #include "f4se/GameEvents.h"
 #include "log.h"
 #include "config.h"
+#include "PapyrusOCBP.h"
 
 
-
+bool RegisterFuncs(VirtualMachine* vm);
 
 PluginHandle	g_pluginHandle = kPluginHandle_Invalid;
 //F4SEMessagingInterface	* g_messagingInterface = NULL;
@@ -17,6 +18,7 @@ PluginHandle	g_pluginHandle = kPluginHandle_Invalid;
 //F4SEScaleformInterface		* g_scaleform = NULL;
 //F4SESerializationInterface	* g_serialization = NULL;
 F4SETaskInterface				* g_task = nullptr;
+F4SEPapyrusInterface            * g_papyrus = nullptr;
 //IDebugLog	gLog("Data\\F4SE\\Plugins\\hook.log");
 
 
@@ -117,6 +119,12 @@ extern "C"
         }
         // supported runtime version
 
+        g_papyrus = (F4SEPapyrusInterface*)f4se->QueryInterface(kInterface_Papyrus);
+        if (!g_papyrus)
+        {
+            _WARNING("couldn't get papyrus interface");
+        }
+
         logger.error("Query complete\n");
         return true;
     }
@@ -132,6 +140,9 @@ extern "C"
             return false;
         }
 
+        if (g_papyrus)
+            g_papyrus->Register(RegisterFuncs);
+
         // Load initial config before the hook.
         logger.error("Loading Config\n");
         loadConfig();
@@ -142,6 +153,12 @@ extern "C"
         return true;
     }
 };
+
+bool RegisterFuncs(VirtualMachine* vm)
+{
+    papyrusOCBP::RegisterFuncs(vm);
+    return true;
+}
 
 BOOL WINAPI DllMain(
     _In_ HINSTANCE hinstDLL,

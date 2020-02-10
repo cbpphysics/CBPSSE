@@ -14,14 +14,14 @@ public:
     SimObj(Actor *actor, config_t &config);
     SimObj() {}
     ~SimObj();
-    bool bind(Actor *actor, std::vector<std::string> &boneNames, config_t &config);
-    bool actorValid(Actor *actor);
-    void update(Actor *actor);
-    bool updateConfig(config_t &config);
-    bool isBound() { return bound; }
+    bool Bind(Actor *actor, std::vector<std::string> &boneNames, config_t &config);
+    bool ActorValid(Actor *actor);
+    void Update(Actor *actor);
+    bool UpdateConfig(config_t &config);
+    bool IsBound() { return bound; }
 
 };
 
 extern std::vector<std::string> boneNames;
-extern std::unordered_map<std::string, std::string> configMap;
-extern std::unordered_map<std::string, std::string> configMapArmor;
+//extern std::unordered_map<std::string, std::string> configMap;
+//extern std::unordered_map<std::string, std::string> configMapArmor;
