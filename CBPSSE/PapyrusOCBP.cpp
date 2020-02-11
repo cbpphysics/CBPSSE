@@ -21,9 +21,21 @@ std::unordered_map<UInt32, std::unordered_map<std::string, bool>> boneIgnores;
 
 namespace papyrusOCBP
 {
-	void ToggleBone(StaticFunctionTag*, Actor* actor, bool toggle, BSFixedString boneName)
+	void SetBoneToggle(StaticFunctionTag*, Actor* actor, bool toggle, BSFixedString boneName)
 	{
 		boneIgnores[actor->formID][std::string(boneName.c_str())] = toggle;
+	}
+
+	bool GetBoneToggle(StaticFunctionTag*, Actor* actor, BSFixedString boneName)
+	{
+		if (boneIgnores.find(actor->formID) != boneIgnores.end()) {
+			auto actorsBoneIgns = boneIgnores.at(actor->formID);
+			if (actorsBoneIgns.find(std::string(boneName.c_str())) != actorsBoneIgns.end()) {
+				return actorsBoneIgns.at(std::string(boneName.c_str()));
+			}
+		}
+
+		return false;
 	}
 
 	void ClearBoneToggles(StaticFunctionTag*)
@@ -36,7 +48,10 @@ namespace papyrusOCBP
 void papyrusOCBP::RegisterFuncs(VirtualMachine* vm)
 {
 	vm->RegisterFunction(
-		new NativeFunction3<StaticFunctionTag, void, Actor*, bool, BSFixedString>("ToggleBone", "OCBP_API", papyrusOCBP::ToggleBone, vm));
+		new NativeFunction3<StaticFunctionTag, void, Actor*, bool, BSFixedString>("SetBoneToggle", "OCBP_API", papyrusOCBP::SetBoneToggle, vm));
+
+	vm->RegisterFunction(
+		new NativeFunction2<StaticFunctionTag, bool, Actor*, BSFixedString>("GetBoneToggle", "OCBP_API", papyrusOCBP::GetBoneToggle, vm));
 
 	vm->RegisterFunction(
 		new NativeFunction0<StaticFunctionTag, void>("ClearBoneToggles", "OCBP_API", papyrusOCBP::ClearBoneToggles, vm));

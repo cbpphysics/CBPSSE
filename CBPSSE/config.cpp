@@ -27,7 +27,7 @@ config_t configArmor;
 configOverrides_t configOverrides;
 configOverrides_t configArmorOverrides;
 
-bool loadConfig() {
+bool LoadConfig() {
     logger.info("loadConfig\n");
 
     bool reloadActors = false;
@@ -152,10 +152,19 @@ bool loadConfig() {
     return reloadActors;
 }
 
-void dumpConfigtoLog()
+void DumpConfigtoLog()
 {
     // Log contents of config
+    logger.info("***** Config Dump *****");
     for (auto section : config) {
+        logger.info("[%s]\n", section.first.c_str());
+        for (auto setting : section.second) {
+            logger.info("%s=%f\n", setting.first.c_str(), setting.second);
+        }
+    }
+
+    logger.info("***** ConfigArmor Dump *****");
+    for (auto section : configArmor) {
         logger.info("[%s]\n", section.first.c_str());
         for (auto setting : section.second) {
             logger.info("%s=%f\n", setting.first.c_str(), setting.second);

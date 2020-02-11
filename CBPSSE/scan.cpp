@@ -192,7 +192,7 @@ void updateActors() {
     static int count = 0;
     if (configReloadCount && count++ > configReloadCount) {
         count = 0;
-        auto reloadActors = loadConfig();
+        auto reloadActors = LoadConfig();
         for (auto &a : actors) {
             a.second.UpdateConfig(config);
         }
@@ -212,6 +212,7 @@ void updateActors() {
         else {
             auto &simObj = objIterator->second;
             if (simObj.IsBound()) {
+                // need better system for update config
                 if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
                     logger.info("torso armor detected on actor %x\n", a.actor->formID);
                     simObj.UpdateConfig(configArmor);

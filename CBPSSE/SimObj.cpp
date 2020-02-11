@@ -57,15 +57,15 @@ void SimObj::Update(Actor *actor) {
     //logger.error("update\n");
     for (auto &t : things) {
 
-        // TODO bad way to do it
-        //if (boneIgnores.find(actor->formID) != boneIgnores.end()) {
-        //    auto actorBoneMap = boneIgnores.at(actor->formID);
-        //    if (actorBoneMap.find(t.first) != actorBoneMap.end()) {
-        //        if (actorBoneMap.at(t.first)) {
-        //            continue;
-        //        }
-        //    }
-        //}
+        // Might be a better way to do this
+        if (boneIgnores.find(actor->formID) != boneIgnores.end()) {
+            auto actorBoneMap = boneIgnores.at(actor->formID);
+            if (actorBoneMap.find(t.first) != actorBoneMap.end()) {
+                if (actorBoneMap.at(t.first)) {
+                    continue;
+                }
+            }
+        }
         t.second.update(actor);
     }
     //logger.error("end SimObj update\n");

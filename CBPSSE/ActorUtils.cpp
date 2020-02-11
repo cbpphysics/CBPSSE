@@ -21,6 +21,7 @@ bool actorUtils::IsActorInPowerArmor(Actor* actor) {
     return !actor->extraDataList->HasType(kExtraData_PowerArmor);
 }
 
+// should change this for any armor
 bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
     bool isEquipped = false;
     if (!actor)

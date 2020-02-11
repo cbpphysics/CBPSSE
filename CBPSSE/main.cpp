@@ -145,7 +145,7 @@ extern "C"
 
         // Load initial config before the hook.
         logger.error("Loading Config\n");
-        loadConfig();
+        LoadConfig();
         //g_messagingInterface->RegisterListener(0, "F4SE", MessageHandler); 
         logger.error("Hooking Game\n");
         DoHook();
