@@ -8,6 +8,7 @@
 class Thing {
     BSFixedString boneName;
     NiPoint3 oldWorldPos;
+    float oldRotZ;
     NiPoint3 velocity;
     clock_t time;
 
@@ -42,11 +43,15 @@ public:
 
     float timeStep = 0.016f;
 
+    bool absRotX = 0;
+    bool absRotY = 0;
+    bool absRotZ = 0;
+
     Thing(NiAVObject *obj, BSFixedString &name);
     ~Thing();
 
     void updateConfig(configEntry_t &centry);
-    void update(Actor *actor);	
+    void update(Actor * actor);	
     void reset(Actor * actor);
 
     void showPos(NiPoint3& p);

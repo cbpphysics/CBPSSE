@@ -98,6 +98,10 @@ void Thing::updateConfig(configEntry_t & centry) {
     if (timeTick <= 1)
         timeTick = 1;
 
+    absRotX = centry["absRotX"] != 0.0;
+    absRotY = centry["absRotY"] != 0.0;
+    absRotZ = centry["absRotZ"] != 0.0;
+
     //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
     //logger.error("z offset = %f\n", solveQuad(stiffness2, stiffness, -gravityBias));
 }
@@ -312,13 +316,14 @@ void Thing::update(Actor *actor) {
 
         auto localDiff = diff;
         localDiff = skeletonObj->m_localTransform.rot * localDiff;
-        localDiff.x *= linearX;
-        localDiff.y *= linearY;
-        localDiff.z *= linearZ;
 
         localDiff.x = clamp(localDiff.x, -maxOffsetX, maxOffsetX);
         localDiff.y = clamp(localDiff.y, -maxOffsetY, maxOffsetY);
-        localDiff.z = clamp(localDiff.z - gravityCorrection, -maxOffsetZ, maxOffsetZ) + gravityCorrection;
+        localDiff.z = clamp(localDiff.z, -maxOffsetZ, maxOffsetZ);
+
+        localDiff.x *= linearX;
+        localDiff.y *= linearY;
+        localDiff.z *= linearZ;
 
         auto rotDiff = localDiff;
         localDiff = skeletonObj->m_localTransform.rot.Transpose() * localDiff;
@@ -352,6 +357,10 @@ void Thing::update(Actor *actor) {
         rotDiff.x *= rotationalX;
         rotDiff.y *= rotationalY;
         rotDiff.z *= rotationalZ;
+
+        if (absRotX) rotDiff.x = fabs(rotDiff.x);
+        if (absRotY) rotDiff.y = fabs(rotDiff.y);
+        if (absRotZ) rotDiff.z = fabs(rotDiff.z);
 
 #if DEBUG
         logger.error("localTransform.pos after: ");

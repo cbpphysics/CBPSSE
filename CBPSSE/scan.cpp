@@ -156,7 +156,8 @@ void updateActors() {
                         IsActorInPowerArmor(actor) &&
                         (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
                         (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
-                        (!femaleOnly || (!IsActorMale(actor) && femaleOnly))) {
+                        (!femaleOnly || (!IsActorMale(actor) && femaleOnly)) &&
+                        (!npcOnly || (actor->formID != 0x14 && npcOnly))) {
                         logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
                         //logger.info("%s\n", actor->unk08-> & 1);
                         //logger.info("%s\n", actor->race->textureModel[1].GetModelName());

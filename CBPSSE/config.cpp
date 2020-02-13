@@ -20,6 +20,7 @@ int configReloadCount = 60;
 bool playerOnly = false;
 bool femaleOnly = false;
 bool maleOnly = false;
+bool npcOnly = false;
 bool detectArmor = false;
 
 config_t config;
@@ -34,6 +35,7 @@ bool LoadConfig() {
     auto playerOnlyOld = playerOnly;
     auto femaleOnlyOld = femaleOnly;
     auto maleOnlyOld = maleOnly;
+    auto npcOnlyOld = npcOnly;
     std::set<std::string> bonesSet;
 
     boneNames.clear();
@@ -53,9 +55,13 @@ bool LoadConfig() {
     playerOnly = configReader.GetBoolean("General", "playerOnly", false);
     femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
     maleOnly = configReader.GetBoolean("General", "maleOnly", false);
+    npcOnly = configReader.GetBoolean("General", "npcOnly", false);
+
     reloadActors = (playerOnly ^ playerOnlyOld) ||
                     (femaleOnly ^ femaleOnlyOld) ||
-                    (maleOnly ^ maleOnlyOld);
+                    (maleOnly ^ maleOnlyOld) ||
+                    (npcOnly ^ npcOnlyOld);
+
     detectArmor = configReader.GetBoolean("General", "detectArmor", false);
     configReloadCount = configReader.GetInteger("Tuning", "rate", 0);
 

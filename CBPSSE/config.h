@@ -12,6 +12,7 @@ typedef std::unordered_map<std::string, configEntry_t> configOverrides_t;
 extern bool playerOnly;
 extern bool femaleOnly;
 extern bool maleOnly;
+extern bool npcOnly;
 extern bool detectArmor;
 
 extern int configReloadCount;
