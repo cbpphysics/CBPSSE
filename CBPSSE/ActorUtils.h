@@ -1,9 +1,12 @@
 #pragma once
 #include "f4se/GameReferences.h"
+#include "config.h"
 
 namespace actorUtils {
-    // The statics needs to not be here
+    std::string GetActorRaceEID(Actor* actor);
     bool IsActorInPowerArmor(Actor* actor);
     bool IsActorTorsoArmorEquipped(Actor* actor);
     bool IsActorMale(Actor* actor);
+    bool IsActorTrackable(Actor* actor);
+    bool IsBoneInWhitelist(Actor* actor, std::string boneName);
 }

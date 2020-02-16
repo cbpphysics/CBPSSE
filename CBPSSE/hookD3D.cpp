@@ -170,7 +170,7 @@ RelocPtr <void*> ProcessEventQueue_Internal(0x0211CF80);
 
 DetourXS renderDetour;
 void DoHook() {
-    logger.info("Attempting Game Hook\n");
+    logger.Info("Attempting Game Hook\n");
     // Useful for finding the addresses
     //CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
 

@@ -4,8 +4,8 @@
 class CbpLogger {
 public:
     CbpLogger(const char* fname);
-    void info(const char* args...);	
-    void error(const char* args...);
+    void Info(const char* args...);	
+    void Error(const char* args...);
 
     FILE *handle;
 };

@@ -44,13 +44,12 @@
 
 using actorUtils::IsActorMale;
 using actorUtils::IsActorTorsoArmorEquipped;
-using actorUtils::IsActorInPowerArmor;
+using actorUtils::IsActorTrackable;
 
 extern F4SETaskInterface *g_task;
 
-
 //void UpdateWorldDataToChild(NiAVObject)
-void dumpTransform(NiTransform t) {
+void DumpTransform(NiTransform t) {
     Console_Print("%8.2f %8.2f %8.2f", t.rot.data[0][0], t.rot.data[0][1], t.rot.data[0][2]);
     Console_Print("%8.2f %8.2f %8.2f", t.rot.data[1][0], t.rot.data[1][1], t.rot.data[1][2]);
     Console_Print("%8.2f %8.2f %8.2f", t.rot.data[2][0], t.rot.data[2][1], t.rot.data[2][2]);
@@ -98,14 +97,6 @@ bool printStuff(NiAVObject *avObj, int depth) {
     //return false;
 }
 
-
-void dumpVec(NiPoint3 p) {
-    logger.info("%8.2f %8.2f %8.2f\n", p.x, p.y, p.z);
-}
-
-
-
-
 template<class T>
 inline void safe_delete(T*& in) {
     if (in) {
@@ -120,7 +111,7 @@ std::unordered_map<UInt32, SimObj> actors;
 TESObjectCELL *curCell = nullptr;
 
 
-void updateActors() {
+void UpdateActors() {
     //LARGE_INTEGER startingTime, endingTime, elapsedMicroseconds;
     //LARGE_INTEGER frequency;
 
@@ -139,9 +130,10 @@ void updateActors() {
     if (!cell) goto FAILED;
 
     if (cell != curCell) {
-        logger.error("cell change %d\n", cell);
+        logger.Error("cell change %d\n", cell);
         curCell = cell;
         actors.clear();
+        actorEntries.clear();
     } else {
         // Attempt to get cell's objects
         for (int i = 0; i < cell->objectList.count; i++) {
@@ -152,15 +144,11 @@ void updateActors() {
                 if (actor && actor->unkF0) {
                     // Find if actors is already being tracked
                     auto soIt = actors.find(actor->formID);
-                    if (soIt == actors.end() &&
-                        IsActorInPowerArmor(actor) &&
-                        (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
-                        (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
-                        (!femaleOnly || (!IsActorMale(actor) && femaleOnly)) &&
-                        (!npcOnly || (actor->formID != 0x14 && npcOnly))) {
-                        logger.info("Tracking Actor with form ID %08x in cell %ld\n", actor->formID, actor->parentCell);
-                        //logger.info("%s\n", actor->unk08-> & 1);
-                        //logger.info("%s\n", actor->race->textureModel[1].GetModelName());
+                    if (soIt == actors.end() && IsActorTrackable(actor)) {
+                        logger.Info("Tracking Actor with form ID %08x in cell %ld, race is %s, gender is %d\n", 
+                            actor->formID, actor->parentCell,
+                            actor->race->editorId.c_str(),
+                            IsActorMale(actor));
                         auto obj = SimObj(actor, config);
                         if (obj.ActorValid(actor)) {
                             actors.emplace(actor->formID, obj);
@@ -201,6 +189,7 @@ void updateActors() {
         // Clear actors
         if (reloadActors) {
             actors.clear();
+            actorEntries.clear();
         }
     }
 
@@ -215,7 +204,7 @@ void updateActors() {
             if (simObj.IsBound()) {
                 // need better system for update config
                 if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
-                    logger.info("torso armor detected on actor %x\n", a.actor->formID);
+                    logger.Info("torso armor detected on actor %x\n", a.actor->formID);
                     simObj.UpdateConfig(configArmor);
                 }
                 else {
@@ -225,7 +214,7 @@ void updateActors() {
             }
             else {
                 if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
-                    logger.info("torso armor detected on actor %x\n", a.actor->formID);
+                    logger.Info("torso armor detected on actor %x\n", a.actor->formID);
                     simObj.Bind(a.actor, boneNames, configArmor);
                 }
                 else {
@@ -248,7 +237,7 @@ FAILED:
 class ScanDelegate : public ITaskDelegate {
 public:
     virtual void Run() {
-        updateActors();
+        UpdateActors();
     }
     virtual void Dispose() {
         delete this;

@@ -32,57 +32,57 @@ void MessageHandler(F4SEMessagingInterface::Message * msg)
     {
         case F4SEMessagingInterface::kMessage_GameDataReady:
         {
-            logger.info("kMessage_GameDataReady\n");
+            logger.Info("kMessage_GameDataReady\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_GameLoaded:
         {
-            logger.info("kMessage_GameLoaded\n");
+            logger.Info("kMessage_GameLoaded\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_NewGame:
         {
-            logger.info("kMessage_NewGame\n");
+            logger.Info("kMessage_NewGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PreLoadGame:
         {
-            logger.info("kMessage_PreLoadGame\n");
+            logger.Info("kMessage_PreLoadGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PostLoad:
         {
-            logger.info("kMessage_PostLoad\n");
+            logger.Info("kMessage_PostLoad\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PostPostLoad:
         {
-            logger.info("kMessage_PostPostLoad\n");
+            logger.Info("kMessage_PostPostLoad\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PostLoadGame:
         {
-            logger.info("kMessage_PostLoadGame\n");
+            logger.Info("kMessage_PostLoadGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PreSaveGame:
         {
-            logger.info("kMessage_PreSaveGame\n");
+            logger.Info("kMessage_PreSaveGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_PostSaveGame:
         {
-            logger.info("kMessage_PostSaveGame\n");
+            logger.Info("kMessage_PostSaveGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_DeleteGame:
         {
-            logger.info("kMessage_DeleteGame\n");
+            logger.Info("kMessage_DeleteGame\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_InputLoaded:
         {
-            logger.info("kMessage_InputLoaded\n");
+            logger.Info("kMessage_InputLoaded\n");
         }
         break;
 
@@ -95,8 +95,8 @@ extern "C"
 
     bool F4SEPlugin_Query(const F4SEInterface * f4se, PluginInfo * info)
     {
-        logger.info("CBP Physics F4SE Plugin\n");
-        logger.error("Query called\n");
+        logger.Info("CBP Physics F4SE Plugin\n");
+        logger.Error("Query called\n");
 
 
         // populate info structure
@@ -109,12 +109,12 @@ extern "C"
 
         if (f4se->isEditor)
         {
-            logger.error("loaded in editor, marking as incompatible\n");
+            logger.Error("loaded in editor, marking as incompatible\n");
             return false;
         }
         else if (f4se->runtimeVersion != RUNTIME_VERSION)
         {
-            logger.error("unsupported runtime version %08X", f4se->runtimeVersion);
+            logger.Error("unsupported runtime version %08X", f4se->runtimeVersion);
             return false;
         }
         // supported runtime version
@@ -125,18 +125,18 @@ extern "C"
             _WARNING("couldn't get papyrus interface");
         }
 
-        logger.error("Query complete\n");
+        logger.Error("Query complete\n");
         return true;
     }
 
     bool F4SEPlugin_Load(const F4SEInterface * f4se)
     {
-        logger.error("CBP Loading\n");
+        logger.Error("CBP Loading\n");
 
         g_task = (F4SETaskInterface *)f4se->QueryInterface(kInterface_Task);
         if (!g_task)
         {
-            logger.error("Couldn't get Task interface\n");
+            logger.Error("Couldn't get Task interface\n");
             return false;
         }
 
@@ -144,12 +144,12 @@ extern "C"
             g_papyrus->Register(RegisterFuncs);
 
         // Load initial config before the hook.
-        logger.error("Loading Config\n");
+        logger.Error("Loading Config\n");
         LoadConfig();
         //g_messagingInterface->RegisterListener(0, "F4SE", MessageHandler); 
-        logger.error("Hooking Game\n");
+        logger.Error("Hooking Game\n");
         DoHook();
-        logger.error("CBP Load Complete\n");
+        logger.Error("CBP Load Complete\n");
         return true;
     }
 };

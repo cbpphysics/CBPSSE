@@ -18,65 +18,62 @@ std::unordered_map<const char*, NiMatrix43>::const_iterator origLocalRot_iter;
 const char * skeletonNif_boneName = "skeleton.nif";
 const char* COM_boneName = "COM";
 
-void Thing::showPos(NiPoint3& p) {
-    logger.info("%8.4f %8.4f %8.4f\n", p.x, p.y, p.z);
+void Thing::ShowPos(NiPoint3& p) {
+    logger.Info("%8.4f %8.4f %8.4f\n", p.x, p.y, p.z);
 }
 
-void Thing::showRot(NiMatrix43& r) {
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[0][0], r.data[0][1], r.data[0][2], r.data[0][3]);
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[1][0], r.data[1][1], r.data[1][2], r.data[1][3]);
-    logger.info("%8.4f %8.4f %8.4f %8.4f\n", r.data[2][0], r.data[2][1], r.data[2][2], r.data[2][3]);
+void Thing::ShowRot(NiMatrix43& r) {
+    logger.Info("%8.4f %8.4f %8.4f %8.4f\n", r.data[0][0], r.data[0][1], r.data[0][2], r.data[0][3]);
+    logger.Info("%8.4f %8.4f %8.4f %8.4f\n", r.data[1][0], r.data[1][1], r.data[1][2], r.data[1][3]);
+    logger.Info("%8.4f %8.4f %8.4f %8.4f\n", r.data[2][0], r.data[2][1], r.data[2][2], r.data[2][3]);
 }
 
 Thing::Thing(NiAVObject* obj, BSFixedString& name)
     : boneName(name)
-    , velocity(NiPoint3(0, 0, 0))
-{
+    , velocity(NiPoint3(0, 0, 0)) {
+    
+    // Set initial positions
     oldWorldPos = obj->m_worldTransform.pos;
-
     time = clock();
 
-    // Save the bones original local values if it already hasn't
+    // Save the bones' original local values if they already haven't
     origLocalPos_iter = origLocalPos.find(boneName.c_str());
     origLocalRot_iter = origLocalRot.find(boneName.c_str());
 
     if (origLocalPos_iter == origLocalPos.end()) {
-        logger.error("for bone %s: ", boneName.c_str());
-        logger.error("firstRun pos Set: ");
+        logger.Error("for bone %s: ", boneName.c_str());
+        logger.Error("firstRun pos Set: ");
         origLocalPos.emplace(boneName.c_str(), obj->m_localTransform.pos);
-        showPos(obj->m_localTransform.pos);
+        ShowPos(obj->m_localTransform.pos);
     }
     if (origLocalRot_iter == origLocalRot.end()) {
-        logger.error("for bone %s: ", boneName.c_str());
-        logger.error("firstRun rot Set:\n");
+        logger.Error("for bone %s: ", boneName.c_str());
+        logger.Error("firstRun rot Set:\n");
         origLocalRot.emplace(boneName.c_str(), obj->m_localTransform.rot);
-        showRot(obj->m_localTransform.rot);
+        ShowRot(obj->m_localTransform.rot);
     }
 }
 
 Thing::~Thing() {
 }
 
-float solveQuad(float a, float b, float c) {
-    float k1 = (-b + sqrtf(b*b - 4*a*c)) / (2 * a);
-    //float k2 = (-b - sqrtf(b*b - 4*a*c)) / (2 * a);
-    //logger.error("k2 = %f\n", k2);
-    return k1;
-}
-
-void Thing::updateConfig(configEntry_t & centry) {
+void Thing::UpdateConfig(configEntry_t & centry) {
     stiffness = centry["stiffness"];
     stiffness2 = centry["stiffness2"];
     damping = centry["damping"];
+
     maxOffsetX = centry["maxoffsetX"];
     maxOffsetY = centry["maxoffsetY"];
     maxOffsetZ = centry["maxoffsetZ"];
+
     linearX = centry["linearX"];
     linearY = centry["linearY"];
     linearZ = centry["linearZ"];
+
     rotationalX = centry["rotationalX"];
     rotationalY = centry["rotationalY"];
     rotationalZ = centry["rotationalZ"];
+
     rotateLinearX = centry["rotateLinearX"];
     rotateLinearY = centry["rotateLinearY"];
     rotateLinearZ = centry["rotateLinearZ"];
@@ -86,10 +83,12 @@ void Thing::updateConfig(configEntry_t & centry) {
     rotateRotationZ = centry["rotateRotationZ"];
 
     timeTick = centry["timetick"];
+
     if (centry.find("timeStep") != centry.end())
         timeStep = centry["timeStep"];
     else 
         timeStep = 0.016f;
+
     gravityBias = centry["gravityBias"];
     gravityCorrection = centry["gravityCorrection"];
     cogOffsetY = centry["cogOffsetY"];
@@ -99,11 +98,6 @@ void Thing::updateConfig(configEntry_t & centry) {
         timeTick = 1;
 
     absRotX = centry["absRotX"] != 0.0;
-    absRotY = centry["absRotY"] != 0.0;
-    absRotZ = centry["absRotZ"] != 0.0;
-
-    //zOffset = solveQuad(stiffness2, stiffness, -gravityBias);
-    //logger.error("z offset = %f\n", solveQuad(stiffness2, stiffness, -gravityBias));
 }
 
 static float clamp(float val, float min, float max) {
@@ -112,16 +106,16 @@ static float clamp(float val, float min, float max) {
     return val;
 }
 
-void Thing::reset(Actor *actor) {
+void Thing::Reset(Actor *actor) {
     auto loadedState = actor->unkF0;
     if (!loadedState || !loadedState->rootNode) {
-        logger.error("No loaded state for actor %08x\n", actor->formID);
+        logger.Error("No loaded state for actor %08x\n", actor->formID);
         return;
     }
     auto obj = loadedState->rootNode->GetObjectByName(&boneName);
 
     if (!obj) {
-        logger.error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
+        logger.Error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
         return;
     }
 
@@ -134,7 +128,28 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-void Thing::update(Actor *actor) {
+NiAVObject* Thing::IsActorValid(Actor* actor) {
+    auto loadedState = actor->unkF0;
+    if (!loadedState || !loadedState->rootNode) {
+        logger.Error("No loaded state for actor %08x\n", actor->formID);
+        return NULL;
+    }
+    auto obj = loadedState->rootNode->GetObjectByName(&boneName);
+
+    if (!obj) {
+        logger.Error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
+        return NULL;
+    }
+
+    if (!obj->m_parent) {
+        logger.Error("Couldn't get bone %s parent for actor %08x\n", boneName.c_str(), actor->formID);
+        return NULL;
+    }
+
+    return obj;
+}
+
+void Thing::Update(Actor *actor) {
     /*LARGE_INTEGER startingTime, endingTime, elapsedMicroseconds;
     LARGE_INTEGER frequency;
 
@@ -148,20 +163,8 @@ void Thing::update(Actor *actor) {
     if (deltaT > 64) deltaT = 64;
     if (deltaT < 8) deltaT = 8;
     
-    auto loadedState = actor->unkF0;
-    if (!loadedState || !loadedState->rootNode) {
-        logger.error("No loaded state for actor %08x\n", actor->formID);
-        return;
-    }
-    auto obj = loadedState->rootNode->GetObjectByName(&boneName);
-
+    auto obj = IsActorValid(actor);
     if (!obj) {
-        logger.error("Couldn't get name for loaded state for actor %08x\n", actor->formID);
-        return;
-    }
-
-    if (!obj->m_parent) {
-        logger.error("Couldn't get bone %s parent for actor %08x\n", boneName.c_str() , actor->formID);
         return;
     }
 
@@ -207,7 +210,7 @@ void Thing::update(Actor *actor) {
         skeletonObj = skeletonObj->m_parent;
     }
     if (skeletonFound == false) {
-        logger.error("Couldn't find skeleton for actor %08x\n", actor->formID);
+        logger.Error("Couldn't find skeleton for actor %08x\n", actor->formID);
         return;
     }
 #if DEBUG
@@ -250,7 +253,7 @@ void Thing::update(Actor *actor) {
 #endif
 
     if (fabs(diff.x) > 100 || fabs(diff.y) > 100 || fabs(diff.z) > 100) {
-        logger.error("transform reset\n");
+        logger.Error("transform reset\n");
         obj->m_localTransform.pos = origLocalPos.at(boneName.c_str());
         oldWorldPos = target;
         velocity = NiPoint3(0, 0, 0);
@@ -359,8 +362,6 @@ void Thing::update(Actor *actor) {
         rotDiff.z *= rotationalZ;
 
         if (absRotX) rotDiff.x = fabs(rotDiff.x);
-        if (absRotY) rotDiff.y = fabs(rotDiff.y);
-        if (absRotZ) rotDiff.z = fabs(rotDiff.z);
 
 #if DEBUG
         logger.error("localTransform.pos after: ");

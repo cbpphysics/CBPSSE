@@ -44,16 +44,15 @@ public:
     float timeStep = 0.016f;
 
     bool absRotX = 0;
-    bool absRotY = 0;
-    bool absRotZ = 0;
 
     Thing(NiAVObject *obj, BSFixedString &name);
     ~Thing();
 
-    void updateConfig(configEntry_t &centry);
-    void update(Actor * actor);	
-    void reset(Actor * actor);
-
-    void showPos(NiPoint3& p);
-    void showRot(NiMatrix43& r);
+    NiAVObject* IsActorValid(Actor* actor);
+    void Reset(Actor* actor);
+    void Update(Actor* actor);	
+    void UpdateConfig(configEntry_t& centry);
+    
+    void ShowPos(NiPoint3& p);
+    void ShowRot(NiMatrix43& r);
 };

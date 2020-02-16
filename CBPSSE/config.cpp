@@ -5,6 +5,7 @@
 #include "Thing.h"
 
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -22,21 +23,28 @@ bool femaleOnly = false;
 bool maleOnly = false;
 bool npcOnly = false;
 bool detectArmor = false;
+bool useWhitelist = false;
 
 config_t config;
 config_t configArmor;
 configOverrides_t configOverrides;
 configOverrides_t configArmorOverrides;
 
+// TODO data structure these
+whitelist_t whitelist;
+std::vector<std::string> raceWhitelist;
+
 bool LoadConfig() {
-    logger.info("loadConfig\n");
+    logger.Info("loadConfig\n");
+
+    std::set<std::string> bonesSet;
 
     bool reloadActors = false;
     auto playerOnlyOld = playerOnly;
     auto femaleOnlyOld = femaleOnly;
     auto maleOnlyOld = maleOnly;
     auto npcOnlyOld = npcOnly;
-    std::set<std::string> bonesSet;
+    auto useWhitelistOld = useWhitelist;
 
     boneNames.clear();
     config.clear();
@@ -47,38 +55,48 @@ bool LoadConfig() {
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
     if (configReader.ParseError() < 0) {
-        logger.error("Can't load 'ocbp.ini'\n");
+        logger.Error("Can't load 'ocbp.ini'\n");
     }
-    logger.error("Reading CBP Config\n");
+    logger.Error("Reading CBP Config\n");
 
     // Read general settings
     playerOnly = configReader.GetBoolean("General", "playerOnly", false);
-    femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
-    maleOnly = configReader.GetBoolean("General", "maleOnly", false);
-    npcOnly = configReader.GetBoolean("General", "npcOnly", false);
+    npcOnly    = configReader.GetBoolean("General", "npcOnly", false);
+    useWhitelist = configReader.GetBoolean("General", "useWhitelist", false);
+
+    if (useWhitelist) {
+        maleOnly = false;
+        femaleOnly = false;
+    }
+    else {
+        femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
+        maleOnly = configReader.GetBoolean("General", "maleOnly", false);
+
+    }
 
     reloadActors = (playerOnly ^ playerOnlyOld) ||
                     (femaleOnly ^ femaleOnlyOld) ||
                     (maleOnly ^ maleOnlyOld) ||
-                    (npcOnly ^ npcOnlyOld);
+                    (npcOnly ^ npcOnlyOld) ||
+                    (useWhitelist ^ useWhitelistOld);
 
     detectArmor = configReader.GetBoolean("General", "detectArmor", false);
     configReloadCount = configReader.GetInteger("Tuning", "rate", 0);
 
     // Read sections
     auto sections = configReader.Sections();
-    for (auto sectionIt = sections.begin(); sectionIt != sections.end(); ++sectionIt) {
+    for (auto sectionsIter = sections.begin(); sectionsIter != sections.end(); ++sectionsIter) {
 
         // Split for override section check
         auto overrideStr = std::string("Override:");
-        auto splitStr = std::mismatch(overrideStr.begin(), overrideStr.end(), sectionIt->begin());
+        auto splitStr = std::mismatch(overrideStr.begin(), overrideStr.end(), sectionsIter->begin());
 
         auto overrideAStr = std::string("Override.A:");
-        auto splitAStr = std::mismatch(overrideAStr.begin(), overrideAStr.end(), sectionIt->begin());
+        auto splitAStr = std::mismatch(overrideAStr.begin(), overrideAStr.end(), sectionsIter->begin());
 
-        if (*sectionIt == std::string("Attach")) {
+        if (*sectionsIter == std::string("Attach")) {
             // Get section contents
-            auto sectionMap = configReader.Section(*sectionIt);
+            auto sectionMap = configReader.Section(*sectionsIter);
             for (auto& valuesIter : sectionMap) {
                 auto& boneName = valuesIter.first;
                 auto& attachName = valuesIter.second;
@@ -93,9 +111,9 @@ bool LoadConfig() {
                 }
             }
         }
-        else if (*sectionIt == std::string("Attach.A") && detectArmor) {
+        else if (*sectionsIter == std::string("Attach.A") && detectArmor) {
             // Get section contents
-            auto sectionMap = configReader.Section(*sectionIt);
+            auto sectionMap = configReader.Section(*sectionsIter);
             for (auto &valuesIter : sectionMap) {
                 auto &boneName = valuesIter.first;
                 auto &attachName = valuesIter.second;
@@ -110,24 +128,61 @@ bool LoadConfig() {
                 }
             }
         }
-        else if (splitStr.first == overrideStr.end()) {
-            // If section name is prefixed with "Override:", grab other half of name for bone
-            auto boneName = std::string(splitStr.second, sectionIt->end());
+        else if (*sectionsIter == std::string("Whitelist") && useWhitelist) {
+            whitelist.clear();
+            raceWhitelist.clear();
 
             // Get section contents
-            auto sectionMap = configReader.Section(*sectionIt); 
+            auto sectionMap = configReader.Section(*sectionsIter);
+            for (auto& valuesIter : sectionMap) {
+                auto& boneName      = valuesIter.first;
+                auto& whitelistName = valuesIter.second;
+
+                size_t commaPos;
+                do {
+                    commaPos = whitelistName.find_first_of(",");
+                    auto token = whitelistName.substr(0, commaPos);
+                    size_t colonPos = token.find_last_of(":");
+                    auto raceName = token.substr(0, colonPos);
+                    auto genderStr = token.substr(colonPos + 1);
+
+                    if (colonPos == -1) {
+                        whitelist[boneName][token].male = true;
+                        whitelist[boneName][token].female = true;
+                        raceWhitelist.push_back(token);
+                    }
+                    else if (genderStr == "male") {
+                        whitelist[boneName][raceName].male = true;
+                        raceWhitelist.push_back(raceName);
+                    }
+                    else if (genderStr == "female") {
+                        whitelist[boneName][raceName].female = true;
+                        raceWhitelist.push_back(raceName);
+                    }
+                    whitelistName = whitelistName.substr(commaPos + 1);
+
+                    //logger.Info("<token:> %s, <rest:> %s, <commaPos:> %d, <colonPos:> %d\n", token.c_str(), whitelistName.c_str(), commaPos >= 0, colonPos < 0);
+                } while (commaPos != -1);
+            }
+        }
+        else if (splitStr.first == overrideStr.end()) {
+            // If section name is prefixed with "Override:", grab other half of name for bone
+            auto boneName = std::string(splitStr.second, sectionsIter->end());
+
+            // Get section contents
+            auto sectionMap = configReader.Section(*sectionsIter); 
             for (auto &valuesIt : sectionMap) {
-                configOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionIt, valuesIt.first, 0.0);
+                configOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionsIter, valuesIt.first, 0.0);
             }
         }
         else if (splitAStr.first == overrideAStr.end()) {
             // If section name is prefixed with "Override:", grab other half of name for bone
-            auto boneName = std::string(splitAStr.second, sectionIt->end());
+            auto boneName = std::string(splitAStr.second, sectionsIter->end());
 
             // Get section contents
-            auto sectionMap = configReader.Section(*sectionIt);
+            auto sectionMap = configReader.Section(*sectionsIter);
             for (auto& valuesIt : sectionMap) {
-                configArmorOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionIt, valuesIt.first, 0.0);
+                configArmorOverrides[boneName][valuesIt.first] = configReader.GetFloat(*sectionsIter, valuesIt.first, 0.0);
             }
         }
     }
@@ -154,26 +209,36 @@ bool LoadConfig() {
     bonesSet = std::set<std::string>(boneNames.begin(), boneNames.end());
     boneNames.assign(bonesSet.begin(), bonesSet.end());
 
-    logger.error("Finished CBP Config\n");
+    logger.Error("Finished CBP Config\n");
     return reloadActors;
 }
 
-void DumpConfigtoLog()
+void DumpConfigToLog()
 {
     // Log contents of config
-    logger.info("***** Config Dump *****");
+    logger.Info("***** Config Dump *****\n");
     for (auto section : config) {
-        logger.info("[%s]\n", section.first.c_str());
+        logger.Info("[%s]\n", section.first.c_str());
         for (auto setting : section.second) {
-            logger.info("%s=%f\n", setting.first.c_str(), setting.second);
+            logger.Info("%s=%f\n", setting.first.c_str(), setting.second);
         }
     }
 
-    logger.info("***** ConfigArmor Dump *****");
+    logger.Info("***** ConfigArmor Dump *****\n");
     for (auto section : configArmor) {
-        logger.info("[%s]\n", section.first.c_str());
+        logger.Info("[%s]\n", section.first.c_str());
         for (auto setting : section.second) {
-            logger.info("%s=%f\n", setting.first.c_str(), setting.second);
+            logger.Info("%s=%f\n", setting.first.c_str(), setting.second);
+        }
+    }
+}
+
+void DumpWhitelistToLog() {
+    logger.Info("***** Whitelist Dump *****\n");
+    for (auto section : whitelist) {
+        logger.Info("[%s]\n", section.first.c_str());
+        for (auto setting : section.second) {
+            logger.Info("%s= female: %d, male: %d\n", setting.first.c_str(), setting.second.female, setting.second.male);
         }
     }
 }

@@ -4,7 +4,7 @@
 #pragma warning(disable : 4996)
 
 // TODO make better macro
-//#define LOG_ON
+#define LOG_ON
 
 CbpLogger::CbpLogger(const char *fname) {
 #ifdef LOG_ON
@@ -15,7 +15,7 @@ CbpLogger::CbpLogger(const char *fname) {
 #endif
 }
 
-void CbpLogger::info(const char *fmt...) {
+void CbpLogger::Info(const char *fmt...) {
 #ifdef LOG_ON
 	if (handle) {
 		va_list argptr;
@@ -27,7 +27,7 @@ void CbpLogger::info(const char *fmt...) {
 #endif
 }
 
-void CbpLogger::error(const char *fmt...) {
+void CbpLogger::Error(const char *fmt...) {
 #ifdef LOG_ON
 	if (handle) {
 		va_list argptr;

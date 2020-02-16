@@ -1,9 +1,14 @@
-#include "SimObj.h"
 #include "f4se/NiNodes.h"
 #include "f4se/GameForms.h"
 #include "f4se/GameRTTI.h"
+
+#include "ActorUtils.h"
+#include "config.h"
 #include "log.h"
 #include "PapyrusOCBP.h"
+#include "SimObj.h"
+
+using actorUtils::IsBoneInWhitelist;
 
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
 std::vector<std::string> boneNames;
@@ -31,7 +36,7 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
             BSFixedString cs(bone_c_str);
             auto bone = loadedData->rootNode->GetObjectByName(&cs);
             if (!bone) {
-                logger.info("Failed to find Bone %s for actor %08x\n", b.c_str(), actor->formID);
+                logger.Info("Failed to find Bone %s for actor %08x\n", b.c_str(), actor->formID);
             } else {
                 //logger.info("Doing Bone %s for actor %08x\n", b, actor->formID);
                 things.emplace(b, Thing(bone, cs));
@@ -66,14 +71,17 @@ void SimObj::Update(Actor *actor) {
                 }
             }
         }
-        t.second.update(actor);
+
+        if (!useWhitelist || (IsBoneInWhitelist(actor, t.first) && useWhitelist)) {
+            t.second.Update(actor);
+        }
     }
     //logger.error("end SimObj update\n");
 }
 
 bool SimObj::UpdateConfig(config_t & config) {
     for (auto &thing : things) {
-        thing.second.updateConfig(config[std::string(thing.first)]);
+        thing.second.UpdateConfig(config[std::string(thing.first)]);
     }
     return true;
 }
