@@ -149,6 +149,7 @@ void UpdateActors() {
                             actor->formID, actor->parentCell,
                             actor->race->editorId.c_str(),
                             IsActorMale(actor));
+                        // Make SimObj and place new element in Things
                         auto obj = SimObj(actor, config);
                         if (obj.ActorValid(actor)) {
                             actors.emplace(actor->formID, obj);

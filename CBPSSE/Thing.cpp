@@ -357,11 +357,12 @@ void Thing::Update(Actor *actor) {
         );
         obj->m_localTransform.pos = newLocalPos;
         
+        if (absRotX) rotDiff.x = fabs(rotDiff.x);
+
         rotDiff.x *= rotationalX;
         rotDiff.y *= rotationalY;
         rotDiff.z *= rotationalZ;
 
-        if (absRotX) rotDiff.x = fabs(rotDiff.x);
 
 #if DEBUG
         logger.error("localTransform.pos after: ");

@@ -4,7 +4,7 @@
 #pragma warning(disable : 4996)
 
 // TODO make better macro
-#define LOG_ON
+//#define LOG_ON
 
 CbpLogger::CbpLogger(const char *fname) {
 #ifdef LOG_ON
