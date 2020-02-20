@@ -140,6 +140,9 @@
 //
 
 
+
+/*//OLD METHOD
+
 typedef UINT64 (__cdecl *renderHook) (void* This, UINT64 arg);
 
 renderHook orender = nullptr;
@@ -147,34 +150,54 @@ renderHook orender = nullptr;
 void scaleTest();
 UINT64 __cdecl Render(void *This, UINT64 arg)
 {
-    //logger.error("This is called\n");
-    //logger.error("orender = %016llx\n", orender);
-    scaleTest();
-    return orender(This, arg);
-    //return 0;
+//logger.error("This is called\n");
+//logger.error("orender = %016llx\n", orender);
+scaleTest();
+return orender(This, arg);
+//return 0;
 }
 
 //RelocPtr <void *> render(0xD69720);
 //RelocPtr <void *> main(0x640BC0);
 
 // Address copied out of SKSE
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2EF0);
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B34A0);
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0);
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0);
-//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2FF0);
-RelocPtr <void*> ProcessEventQueue_Internal(0x0211CF80);
-
-
-
+//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B2EF0); //For SSE 1.5.23
+//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B34A0);  //For SSE 1.5.39
+//RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005B31E0); //For SSE 1.5.53
+RelocPtr <void *> ProcessTasks_HookTarget_Enter(0x005BAB10); //For VR 1.4.15
 
 DetourXS renderDetour;
 void DoHook() {
-    logger.Info("Attempting Game Hook\n");
-    // Useful for finding the addresses
-    //CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
+logger.info("Attempting Game Hook\n");
+// Useful for finding the addresses
+//CreateThread(NULL, 0, HookCreateFn, NULL, 0, NULL);
 
-    //renderDetour.Create(render.GetPtr(), Render, &(LPVOID)orender);
-    renderDetour.Create((LPVOID)ProcessEventQueue_Internal.GetPtr(), Render, &(LPVOID)orender);
-    //orender = (renderHook)renderDetour.GetTrampoline();
+//renderDetour.Create(render.GetPtr(), Render, &(LPVOID)orender);
+renderDetour.Create(ProcessTasks_HookTarget_Enter.GetPtr(), Render, &(LPVOID)orender);
+//orender = (renderHook)renderDetour.GetTrampoline();
+}
+
+*/
+
+
+typedef void(*_ProcessEventQueue_Internal) (void * thisPtr);
+
+_ProcessEventQueue_Internal orig_ProcessEventQueue_Internal = nullptr;
+
+void UpdateActors();
+
+void hk_ProcessEventQueue_Internal(void *thisPtr)
+{
+	orig_ProcessEventQueue_Internal(thisPtr);
+	UpdateActors();
+}
+
+RelocPtr <void*> ProcessEventQueue_Internal(0x0211CF80);
+
+DetourXS renderDetour;
+
+void DoHook() {
+	logger.Info("Attempting Game Hook\n");
+
+	renderDetour.Create((LPVOID)ProcessEventQueue_Internal.GetPtr(), hk_ProcessEventQueue_Internal, (LPVOID*)(&orig_ProcessEventQueue_Internal));
 }

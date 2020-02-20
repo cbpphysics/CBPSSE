@@ -235,18 +235,18 @@ FAILED:
 }
 
 
-class ScanDelegate : public ITaskDelegate {
-public:
-    virtual void Run() {
-        UpdateActors();
-    }
-    virtual void Dispose() {
-        delete this;
-    }
-};
-
-
-void scaleTest() {
-    g_task->AddTask(new ScanDelegate());
-    return;
-}
+//class ScanDelegate : public ITaskDelegate {
+//public:
+//    virtual void Run() {
+//        UpdateActors();
+//    }
+//    virtual void Dispose() {
+//        delete this;
+//    }
+//};
+//
+//
+//void scaleTest() {
+//    g_task->AddTask(new ScanDelegate());
+//    return;
+//}

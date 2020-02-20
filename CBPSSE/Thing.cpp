@@ -297,6 +297,10 @@ void Thing::Update(Actor *actor) {
         // clamp the difference to stop the breast severely lagging at low framerates
         diff = newPos - target;
 
+        diff.x = clamp(diff.x, -maxOffsetX, maxOffsetX);
+        diff.y = clamp(diff.y, -maxOffsetY, maxOffsetY);
+        diff.z = clamp(diff.z - gravityCorrection, -maxOffsetZ, maxOffsetZ) + gravityCorrection;
+
         //oldWorldPos = target + diff;
 
 #if DEBUG
@@ -319,11 +323,6 @@ void Thing::Update(Actor *actor) {
 
         auto localDiff = diff;
         localDiff = skeletonObj->m_localTransform.rot * localDiff;
-
-        localDiff.x = clamp(localDiff.x, -maxOffsetX, maxOffsetX);
-        localDiff.y = clamp(localDiff.y, -maxOffsetY, maxOffsetY);
-        localDiff.z = clamp(localDiff.z, -maxOffsetZ, maxOffsetZ);
-
         localDiff.x *= linearX;
         localDiff.y *= linearY;
         localDiff.z *= linearZ;
