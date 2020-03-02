@@ -32,11 +32,23 @@ bool actorUtils::IsActorInPowerArmor(Actor* actor) {
 // May want to change this for any armor
 bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
     bool isEquipped = false;
+    bool isArmorIgnored = false;
+
     if (!actor)
         return false;
+
     // 11 IS ARMOR TORSO SLOT (41 minus 30??)
     isEquipped = actor->equipData->slots[11].item;
-    return isEquipped;
+
+    // Check if armor is ignored
+    if (isEquipped) {
+        auto itemFormID = actor->equipData->slots[11].item->formID;
+        auto idIter = armorIgnore.find(itemFormID);
+        if (idIter != armorIgnore.end())
+            isArmorIgnored = true;
+    }
+
+    return isEquipped && !isArmorIgnored;
 }
 
 bool actorUtils::IsActorTrackable(Actor* actor) {

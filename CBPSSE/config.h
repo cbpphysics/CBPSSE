@@ -29,5 +29,6 @@ extern config_t config;
 extern config_t configArmor;
 extern whitelist_t whitelist;
 extern std::vector<std::string> raceWhitelist;
+extern std::unordered_map<UInt32, bool> armorIgnore;
 bool LoadConfig();
 void DumpWhitelistToLog();

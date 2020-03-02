@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -33,6 +34,7 @@ configOverrides_t configArmorOverrides;
 // TODO data structure these
 whitelist_t whitelist;
 std::vector<std::string> raceWhitelist;
+std::unordered_map<UInt32, bool> armorIgnore;
 
 bool LoadConfig() {
     logger.Info("loadConfig\n");
@@ -71,7 +73,6 @@ bool LoadConfig() {
     else {
         femaleOnly = configReader.GetBoolean("General", "femaleOnly", false);
         maleOnly = configReader.GetBoolean("General", "maleOnly", false);
-
     }
 
     reloadActors = (playerOnly ^ playerOnlyOld) ||
@@ -82,6 +83,24 @@ bool LoadConfig() {
 
     detectArmor = configReader.GetBoolean("General", "detectArmor", false);
     configReloadCount = configReader.GetInteger("Tuning", "rate", 0);
+
+    //Read armorIgnore
+    auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
+    {
+        size_t commaPos;
+        do {
+            commaPos = armorIgnoreStr.find_first_of(",");
+            auto token = armorIgnoreStr.substr(0, commaPos);
+            UInt32 formID;
+            std::stringstream ss;
+            ss << std::hex << token;
+            ss >> formID;
+            armorIgnore[formID] = true;
+            armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
+
+            //logger.Info("<token:> %s, <rest:> %s, <commaPos:> %d, <colonPos:> %d\n", token.c_str(), whitelistName.c_str(), commaPos >= 0, colonPos < 0);
+        } while (commaPos != -1);
+    }
 
     // Read sections
     auto sections = configReader.Sections();

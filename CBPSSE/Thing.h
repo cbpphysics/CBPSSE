@@ -5,6 +5,9 @@
 #include <time.h>
 #include "config.h"
 
+typedef std::unordered_map<const char*, std::unordered_map<UInt32, NiPoint3>> pos_map;
+typedef std::unordered_map<const char*, std::unordered_map<UInt32, NiMatrix43>> rot_map;
+
 class Thing {
     BSFixedString boneName;
     NiPoint3 oldWorldPos;
@@ -44,6 +47,9 @@ public:
     float timeStep = 0.016f;
 
     bool absRotX = 0;
+
+    static pos_map origLocalPos;
+    static rot_map origLocalRot;
 
     Thing(NiAVObject *obj, BSFixedString &name);
     ~Thing();
