@@ -42,10 +42,21 @@ bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
 
     // Check if armor is ignored
     if (isEquipped) {
-        auto itemFormID = actor->equipData->slots[11].item->formID;
-        auto idIter = armorIgnore.find(itemFormID);
-        if (idIter != armorIgnore.end())
+        auto torsoFormID = actor->equipData->slots[11].item->formID;
+        auto bodyFormID = actor->equipData->slots[3].item->formID;
+
+        //logger.Info("torsoFormID: 0x%08x\n", torsoFormID);
+        //logger.Info("bodyFormID: 0x%08x\n", bodyFormID);
+
+        auto torsoIdIter = armorIgnore.find(torsoFormID);
+
+        if (torsoIdIter != armorIgnore.end())
             isArmorIgnored = true;
+        else if ((torsoFormID == bodyFormID - 1)) {
+            auto bodyIdIter = armorIgnore.find(bodyFormID);
+            if (bodyIdIter != armorIgnore.end())
+                isArmorIgnored = true;
+        }
     }
 
     return isEquipped && !isArmorIgnored;
