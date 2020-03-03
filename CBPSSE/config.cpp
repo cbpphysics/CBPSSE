@@ -53,6 +53,7 @@ bool LoadConfig() {
     configArmor.clear();
     configOverrides.clear();
     configArmorOverrides.clear();
+    armorIgnore.clear();
 
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
