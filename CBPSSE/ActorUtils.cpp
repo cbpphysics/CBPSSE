@@ -24,9 +24,19 @@ bool actorUtils::IsActorMale(Actor *actor)
 }
 
 bool actorUtils::IsActorInPowerArmor(Actor* actor) {
-    if (!actor)
-        return false;
-    return !actor->extraDataList->HasType(kExtraData_PowerArmor);
+    bool isInPowerArmor = false;
+    if (!actor) {
+        logger.Info("IsActorInPowerArmor: no actor!\n");
+        return true; // will force game to not call Update
+    }
+    if (!actor->extraDataList) {
+        logger.Info("IsActorInPowerArmor: no extraDataList!\n");
+        return true; // will force game to not call Update
+    }
+
+    isInPowerArmor = actor->extraDataList->HasType(kExtraData_PowerArmor);
+    //logger.Info("is in power armor: %d\n", isInPowerArmor);
+    return isInPowerArmor;
 }
 
 // May want to change this for any armor
@@ -64,12 +74,11 @@ bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
 
 bool actorUtils::IsActorTrackable(Actor* actor) {
     bool inRaceWhitelist = find(raceWhitelist.begin(), raceWhitelist.end(), actorUtils::GetActorRaceEID(actor)) != raceWhitelist.end();
-    return IsActorInPowerArmor(actor) &&
-            (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
-            (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
-            (!femaleOnly || (!IsActorMale(actor) && femaleOnly)) &&
-            (!npcOnly || (actor->formID != 0x14 && npcOnly)) &&
-            (!useWhitelist || (inRaceWhitelist && useWhitelist));
+    return (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
+           (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
+           (!femaleOnly || (!IsActorMale(actor) && femaleOnly)) &&
+           (!npcOnly || (actor->formID != 0x14 && npcOnly)) &&
+           (!useWhitelist || (inRaceWhitelist && useWhitelist));
 }
 
 bool actorUtils::IsBoneInWhitelist(Actor* actor, std::string boneName) {

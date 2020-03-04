@@ -9,6 +9,7 @@
 #include "SimObj.h"
 
 using actorUtils::IsBoneInWhitelist;
+using actorUtils::IsActorInPowerArmor;
 
 // Note we don't ref count the nodes becasue it's ignored when the Actor is deleted, and calling Release after that can corrupt memory
 std::vector<std::string> boneNames;
@@ -49,6 +50,8 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
 }
 
 bool SimObj::ActorValid(Actor *actor) {
+    if (!actor)
+        return false;
     if (actor->flags & TESForm::kFlag_IsDeleted)
         return false;
     if (actor && actor->unkF0 && actor->unkF0->rootNode)
@@ -72,7 +75,9 @@ void SimObj::Update(Actor *actor) {
             }
         }
 
-        if (!useWhitelist || (IsBoneInWhitelist(actor, t.first) && useWhitelist)) {
+        if (!useWhitelist || (IsBoneInWhitelist(actor, t.first) && useWhitelist) &&
+            !IsActorInPowerArmor(actor))
+        {
             t.second.Update(actor);
         }
     }
