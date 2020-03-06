@@ -1,3 +1,4 @@
+#include "ActorUtils.h"
 #include "Thing.h"
 #include "log.h"
 #include "f4se\NiNodes.h"
@@ -112,8 +113,8 @@ template <typename T> int sgn(T val) {
 }
 
 NiAVObject* Thing::IsActorValid(Actor* actor) {
-    if (!actor) {
-        logger.Error("No actor in Thing::Update\n");
+    if (!actorUtils::IsActorValid(actor)) {
+        logger.Error("No valid actor in Thing::Update\n");
         return NULL;
     }
     auto loadedState = actor->unkF0;

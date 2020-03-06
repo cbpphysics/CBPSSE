@@ -49,16 +49,6 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
     return false;
 }
 
-bool SimObj::ActorValid(Actor *actor) {
-    if (!actor)
-        return false;
-    if (actor->flags & TESForm::kFlag_IsDeleted)
-        return false;
-    if (actor && actor->unkF0 && actor->unkF0->rootNode)
-        return true;
-    return false;
-}
-
 void SimObj::Update(Actor *actor) {
     if (!bound)
         return;

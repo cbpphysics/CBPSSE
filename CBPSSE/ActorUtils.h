@@ -8,5 +8,6 @@ namespace actorUtils {
     bool IsActorTorsoArmorEquipped(Actor* actor);
     bool IsActorMale(Actor* actor);
     bool IsActorTrackable(Actor* actor);
+    bool IsActorValid(Actor* actor);
     bool IsBoneInWhitelist(Actor* actor, std::string boneName);
 }

@@ -8,11 +8,21 @@
 #include "f4se/GameRTTI.h"
 
 std::string actorUtils::GetActorRaceEID(Actor* actor) {
+    if (!IsActorValid(actor)) {
+        logger.Info("GetActorRaceEID: no actor!\n");
+        return "";
+    }
+
     return std::string(actor->race->editorId.c_str());
 }
 
 bool actorUtils::IsActorMale(Actor *actor)
 {
+    if (!IsActorValid(actor)) {
+        logger.Info("IsActorMale: no actor!\n");
+        return false;
+    }
+
     TESNPC* actorNPC = DYNAMIC_CAST(actor->baseForm, TESForm, TESNPC);
 
     auto npcSex = actorNPC ? CALL_MEMBER_FN(actorNPC, GetSex)() : 1;
@@ -25,7 +35,7 @@ bool actorUtils::IsActorMale(Actor *actor)
 
 bool actorUtils::IsActorInPowerArmor(Actor* actor) {
     bool isInPowerArmor = false;
-    if (!actor) {
+    if (!IsActorValid(actor)) {
         logger.Info("IsActorInPowerArmor: no actor!\n");
         return true; // will force game to not call Update
     }
@@ -44,16 +54,34 @@ bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
     bool isEquipped = false;
     bool isArmorIgnored = false;
 
-    if (!actor)
+    if (!IsActorValid(actor)) {
+        logger.Info("Actor is not valid\n");
         return false;
+    }
+    if (!actor->equipData && !actor->equipData->slots) {
+        logger.Info("Actor has no equipData\n");
+        return false;
+    }
 
     // 11 IS ARMOR TORSO SLOT (41 minus 30??)
     isEquipped = actor->equipData->slots[11].item;
 
     // Check if armor is ignored
     if (isEquipped) {
+        if (!actor->equipData->slots[11].item) {
+            logger.Info("slot 11 item check failed.\n");
+            // redundant check but just in case
+            return false;
+        }
+        UInt32 bodyFormID;
+        if (!actor->equipData->slots[3].item) {
+            logger.Info("slot 3 item check failed.\n");
+            bodyFormID = 0;
+        }
+        else {
+            bodyFormID = actor->equipData->slots[3].item->formID;;
+        }
         auto torsoFormID = actor->equipData->slots[11].item->formID;
-        auto bodyFormID = actor->equipData->slots[3].item->formID;
 
         //logger.Info("torsoFormID: 0x%08x\n", torsoFormID);
         //logger.Info("bodyFormID: 0x%08x\n", bodyFormID);
@@ -73,6 +101,11 @@ bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
 }
 
 bool actorUtils::IsActorTrackable(Actor* actor) {
+    if (!IsActorValid(actor)) {
+        logger.Info("IsActorTrackable: actor is not valid.\n");
+        return false;
+    }
+
     bool inRaceWhitelist = find(raceWhitelist.begin(), raceWhitelist.end(), actorUtils::GetActorRaceEID(actor)) != raceWhitelist.end();
     return (!playerOnly || (actor->formID == 0x14 && playerOnly)) &&
            (!maleOnly || (IsActorMale(actor) && maleOnly)) &&
@@ -81,7 +114,28 @@ bool actorUtils::IsActorTrackable(Actor* actor) {
            (!useWhitelist || (inRaceWhitelist && useWhitelist));
 }
 
+bool actorUtils::IsActorValid(Actor* actor) {
+    if (!actor) {
+        logger.Info("IsActorValid: actor is null\n");
+        return false;
+    }
+    if (actor->flags & TESForm::kFlag_IsDeleted) {
+        logger.Info("IsActorValid: actor has deleted flag\n");
+        return false;
+    }
+    if (actor && actor->unkF0 && actor->unkF0->rootNode) {
+        return true;
+    }
+    logger.Info("IsActorValid: actor is not valid state\n");
+    return false;
+}
+
 bool actorUtils::IsBoneInWhitelist(Actor* actor, std::string boneName) {
+    if (!IsActorValid(actor)) {
+        logger.Info("IsBoneInWhitelist: actor is not valid.\n");
+        return false;
+    }
+
     auto raceEID = actorUtils::GetActorRaceEID(actor);
     if (whitelist.find(boneName) != whitelist.end()) {
         auto racesMap = whitelist.at(boneName);

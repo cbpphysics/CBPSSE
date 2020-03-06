@@ -45,6 +45,7 @@
 using actorUtils::IsActorMale;
 using actorUtils::IsActorTorsoArmorEquipped;
 using actorUtils::IsActorTrackable;
+using actorUtils::IsActorValid;
 
 extern F4SETaskInterface *g_task;
 
@@ -145,18 +146,18 @@ void UpdateActors() {
                     // Find if actors is already being tracked
                     auto soIt = actors.find(actor->formID);
                     if (soIt == actors.end() && IsActorTrackable(actor)) {
-                        logger.Info("Tracking Actor with form ID %08x in cell %ld, race is %s, gender is %d\n", 
-                            actor->formID, actor->parentCell,
-                            actor->race->editorId.c_str(),
-                            IsActorMale(actor));
+                        //logger.Info("Tracking Actor with form ID %08x in cell %ld, race is %s, gender is %d\n", 
+                        //    actor->formID, actor->parentCell,
+                        //    actor->race->editorId.c_str(),
+                        //    IsActorMale(actor));
                         // Make SimObj and place new element in Things
                         auto obj = SimObj(actor, config);
-                        if (obj.ActorValid(actor)) {
+                        if (IsActorValid(actor)) {
                             actors.emplace(actor->formID, obj);
                             actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                         }
                     }
-                    else if (soIt->second.ActorValid(actor)) {
+                    else if (IsActorValid(actor)) {
                         actorEntries.emplace_back(ActorEntry{ actor->formID, actor });
                     }
                 }
