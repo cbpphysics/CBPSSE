@@ -131,7 +131,7 @@ void UpdateActors() {
     if (!cell) goto FAILED;
 
     if (cell != curCell) {
-        logger.Error("cell change %d\n", cell);
+        logger.Error("cell change %d\n", cell->formID);
         curCell = cell;
         actors.clear();
         actorEntries.clear();
@@ -147,7 +147,7 @@ void UpdateActors() {
                     auto soIt = actors.find(actor->formID);
                     if (soIt == actors.end() && IsActorTrackable(actor)) {
                         //logger.Info("Tracking Actor with form ID %08x in cell %ld, race is %s, gender is %d\n", 
-                        //    actor->formID, actor->parentCell,
+                        //    actor->formID, actor->parentCell->formID,
                         //    actor->race->editorId.c_str(),
                         //    IsActorMale(actor));
                         // Make SimObj and place new element in Things
@@ -184,8 +184,14 @@ void UpdateActors() {
     if (configReloadCount && count++ > configReloadCount) {
         count = 0;
         auto reloadActors = LoadConfig();
-        for (auto &a : actors) {
-            a.second.UpdateConfig(config);
+        for (auto& a : actorEntries) {
+            auto objIterator = actors.find(a.id);
+            if (objIterator == actors.end()) {
+                //logger.error("Sim Object not found in tracked actors\n");
+            }
+            else {
+                objIterator->second.UpdateConfig(a.actor, boneNames, config);
+            }
         }
 
         // Clear actors
@@ -207,10 +213,10 @@ void UpdateActors() {
                 // need better system for update config
                 if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
                     logger.Info("torso armor detected on actor %x\n", a.actor->formID);
-                    simObj.UpdateConfig(configArmor);
+                    simObj.UpdateConfig(a.actor, boneNames, configArmor);
                 }
                 else {
-                    simObj.UpdateConfig(config);
+                    simObj.UpdateConfig(a.actor, boneNames, config);
                 }
                 simObj.Update(a.actor);
             }

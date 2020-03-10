@@ -27,6 +27,9 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
 {
 //	logger.error("bind\n");
 
+    if (!actor) {
+        return false;
+    }
     auto loadedData = actor->unkF0;
     if (loadedData && loadedData->rootNode) {
         bound = true;
@@ -43,7 +46,7 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
                 things.emplace(b, Thing(bone, cs));
             }
         }
-        UpdateConfig(config);
+        UpdateConfig(actor, std::vector<std::string>(), config);
         return  true;
     }
     return false;
@@ -52,9 +55,10 @@ bool SimObj::Bind(Actor *actor, std::vector<std::string>& boneNames, config_t &c
 void SimObj::Update(Actor *actor) {
     if (!bound)
         return;
-    //logger.error("update\n");
+    logger.Error("SimObj::Update\n");
     for (auto &t : things) {
-
+        logger.Info("SimObj update: doing thing %s\n", t.first.c_str());
+        
         // Might be a better way to do this
         if (boneIgnores.find(actor->formID) != boneIgnores.end()) {
             auto actorBoneMap = boneIgnores.at(actor->formID);
@@ -68,13 +72,34 @@ void SimObj::Update(Actor *actor) {
         if (!useWhitelist || (IsBoneInWhitelist(actor, t.first) && useWhitelist) &&
             !IsActorInPowerArmor(actor))
         {
+            logger.Error("SimObj::Update - calling Thing::Update\n");
             t.second.Update(actor);
         }
     }
     //logger.error("end SimObj update\n");
 }
 
-bool SimObj::UpdateConfig(config_t & config) {
+bool SimObj::UpdateConfig(Actor* actor, std::vector<std::string>& boneNames, config_t& config) {
+    logger.Error("SimObj::UpdateConfig\n");
+    if (!actor) {
+        return false;
+    }
+    auto loadedData = actor->unkF0;
+    if (loadedData && loadedData->rootNode) {
+        for (std::string b : boneNames) {
+            logger.Error("SimObj::UpdateConfig - adding bone %s\n", b.c_str());
+            BSFixedString cs(b.c_str());
+            auto bone = loadedData->rootNode->GetObjectByName(&cs);
+            auto findBone = things.find(b);
+            if (!bone) {
+                logger.Info("Failed to find Bone %s for actor %08x\n", b.c_str(), actor->formID);
+            }
+            else if (findBone == things.end()) {
+                //logger.info("Doing Bone %s for actor %08x\n", b, actor->formID);
+                things.emplace(b, Thing(bone, cs));
+            }
+        }
+    }
     for (auto &thing : things) {
         thing.second.UpdateConfig(config[std::string(thing.first)]);
     }
