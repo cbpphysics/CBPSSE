@@ -95,13 +95,13 @@ extern "C"
 
     bool F4SEPlugin_Query(const F4SEInterface * f4se, PluginInfo * info)
     {
-        logger.Info("CBP Physics F4SE Plugin\n");
+        logger.Info("OCBP Physics F4SE Plugin\n");
         logger.Error("Query called\n");
 
 
         // populate info structure
         info->infoVersion = PluginInfo::kInfoVersion;
-        info->name = "CBP plugin";
+        info->name = "OCBP plugin";
         info->version = 24;
 
         // store plugin handle so we can identify ourselves later
