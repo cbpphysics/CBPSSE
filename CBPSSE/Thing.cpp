@@ -4,7 +4,7 @@
 #include "f4se\NiNodes.h"
 #include <time.h>
 
-constexpr auto DEG_TO_RAD = 3.14159265 / 180;
+constexpr float DEG_TO_RAD = 3.14159265 / 180;
 const char* skeletonNif_boneName = "skeleton.nif";
 const char* COM_boneName = "COM";
 
@@ -65,6 +65,13 @@ void Thing::UpdateConfig(configEntry_t & centry) {
     rotateRotationX = centry["rotateRotationX"];
     rotateRotationY = centry["rotateRotationY"];
     rotateRotationZ = centry["rotateRotationZ"];
+
+    scaleMultiplierX = 1.0f;// centry["scaleMultiplierX"];
+    scaleMultiplierY = 1.0f;// centry["scaleMultiplierY"];
+    scaleMultiplierZ = 1.0f;// centry["scaleMultiplierZ"];
+
+    posOffsetX = centry["posOffsetX"];
+    posOffsetY = centry["posOffsetY"];
 
     timeTick = centry["timetick"];
 
@@ -346,9 +353,13 @@ void Thing::Update(Actor *actor) {
 
         auto localDiff = diff;
         localDiff = skeletonObj->m_localTransform.rot * localDiff;
-        localDiff.x *= linearX;
-        localDiff.y *= linearY;
-        localDiff.z *= linearZ;
+
+        localDiff.x = clamp(localDiff.x - posOffsetX, -maxOffsetX, maxOffsetX) + posOffsetX;
+        localDiff.y = clamp(localDiff.y - posOffsetY, -maxOffsetY, maxOffsetY) + posOffsetY;
+
+        localDiff.x *= linearX * scaleMultiplierX;
+        localDiff.y *= linearY * scaleMultiplierY;
+        localDiff.z *= linearZ * scaleMultiplierZ;
 
         auto rotDiff = localDiff;
         localDiff = skeletonObj->m_localTransform.rot.Transpose() * localDiff;

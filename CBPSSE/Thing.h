@@ -44,6 +44,13 @@ public:
     float rotateRotationY = 0.0f;
     float rotateRotationZ = 0.0f;
 
+    float scaleMultiplierX = 1.0f;
+    float scaleMultiplierY = 1.0f;
+    float scaleMultiplierZ = 1.0f;
+
+    float posOffsetX = 0.0f;
+    float posOffsetY = 0.0f;
+
     float timeStep = 0.016f;
 
     bool absRotX = 0;
