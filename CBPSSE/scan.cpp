@@ -43,9 +43,9 @@
 #pragma warning(disable : 4996)
 
 using actorUtils::IsActorMale;
-using actorUtils::IsActorTorsoArmorEquipped;
 using actorUtils::IsActorTrackable;
 using actorUtils::IsActorValid;
+using actorUtils::BuildConfigForActor;
 
 extern F4SETaskInterface *g_task;
 
@@ -208,26 +208,15 @@ void UpdateActors() {
             //logger.error("Sim Object not found in tracked actors\n");
         }
         else {
+            config_t composedConfig = BuildConfigForActor(a.actor);
+            
             auto &simObj = objIterator->second;
             if (simObj.IsBound()) {
-                // need better system for update config
-                if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
-                    logger.Info("torso armor detected on actor %x\n", a.actor->formID);
-                    simObj.UpdateConfig(a.actor, boneNames, configArmor);
-                }
-                else {
-                    simObj.UpdateConfig(a.actor, boneNames, config);
-                }
+                simObj.UpdateConfig(a.actor, boneNames, composedConfig);
                 simObj.Update(a.actor);
             }
             else {
-                if (IsActorTorsoArmorEquipped(a.actor) && detectArmor) {
-                    logger.Info("torso armor detected on actor %x\n", a.actor->formID);
-                    simObj.Bind(a.actor, boneNames, configArmor);
-                }
-                else {
-                    simObj.Bind(a.actor, boneNames, config);
-                }
+                simObj.Bind(a.actor, boneNames, composedConfig);
             }
         }
     }

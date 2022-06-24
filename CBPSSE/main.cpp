@@ -12,14 +12,14 @@
 
 bool RegisterFuncs(VirtualMachine* vm);
 
-PluginHandle	g_pluginHandle = kPluginHandle_Invalid;
-//F4SEMessagingInterface	* g_messagingInterface = NULL;
+PluginHandle    g_pluginHandle = kPluginHandle_Invalid;
+F4SEMessagingInterface         * g_messagingInterface = NULL;
 
-//F4SEScaleformInterface		* g_scaleform = NULL;
-//F4SESerializationInterface	* g_serialization = NULL;
-F4SETaskInterface				* g_task = nullptr;
-F4SEPapyrusInterface            * g_papyrus = nullptr;
-//IDebugLog	gLog("Data\\F4SE\\Plugins\\hook.log");
+//F4SEScaleformInterface       * g_scaleform = NULL;
+//F4SESerializationInterface   * g_serialization = NULL;
+F4SETaskInterface              * g_task = nullptr;
+F4SEPapyrusInterface           * g_papyrus = nullptr;
+//IDebugLog    gLog("Data\\F4SE\\Plugins\\hook.log");
 
 
 void DoHook();
@@ -33,6 +33,12 @@ void MessageHandler(F4SEMessagingInterface::Message * msg)
         case F4SEMessagingInterface::kMessage_GameDataReady:
         {
             logger.Info("kMessage_GameDataReady\n");
+            // Load initial config
+            logger.Error("Loading Config");
+            LoadConfig();
+            logger.Error("Hooking Game");
+            DoHook();
+            logger.Error("CBP Load Complete\n");
         }
         break;
         case F4SEMessagingInterface::kMessage_GameLoaded:
@@ -142,14 +148,16 @@ extern "C"
 
         if (g_papyrus)
             g_papyrus->Register(RegisterFuncs);
-
-        // Load initial config before the hook.
-        logger.Error("Loading Config\n");
-        LoadConfig();
-        //g_messagingInterface->RegisterListener(0, "F4SE", MessageHandler); 
-        logger.Error("Hooking Game\n");
-        DoHook();
-        logger.Error("CBP Load Complete\n");
+        
+        g_messagingInterface = (F4SEMessagingInterface*)f4se->QueryInterface(kInterface_Messaging);
+        if (!g_messagingInterface)
+        {
+            logger.Error("Couldn't get messaging interface");
+            return false;
+        }
+        
+        g_messagingInterface->RegisterListener(g_pluginHandle, "F4SE", MessageHandler); 
+        
         return true;
     }
 };
