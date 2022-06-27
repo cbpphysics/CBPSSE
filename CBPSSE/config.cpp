@@ -88,6 +88,7 @@ bool LoadConfig() {
     config_t configOverrides;
     std::map<UInt32, config_t> configArmorBoneOverrides;
     std::set<std::string> bonesSet;
+    std::unordered_map<std::string, UInt32> priorityNameMappings;
 
     bool reloadActors = false;
     auto playerOnlyOld = playerOnly;
@@ -167,11 +168,20 @@ bool LoadConfig() {
             auto attachSubname = std::string(splitSubAttachStr.second, sectionsIter->end());
 
             UInt32 attachPriority;
-            try {
-                attachPriority = std::stoul(attachSubname);
+            auto mapEntry = priorityNameMappings.find(attachSubname);
+            if (mapEntry != priorityNameMappings.end()) {
+                attachPriority = mapEntry->second;
             }
-            catch (const std::exception&) {
-                continue;
+            else {
+                std::string priorityMapping = configReader.Get("Priority", attachSubname, "");
+                try {
+                    attachPriority = std::stoul(priorityMapping);
+                }
+                catch (const std::exception&) {
+                    continue;
+                }
+
+                priorityNameMappings[attachSubname] = attachPriority;
             }
 
             auto sectionMap = configReader.Section(*sectionsIter);
@@ -197,11 +207,20 @@ bool LoadConfig() {
             auto armorSubname = std::string(splitArmorStr.second, sectionsIter->end());
 
             UInt32 armorPriority;
-            try {
-                armorPriority = std::stoul(armorSubname);
+            auto mapEntry = priorityNameMappings.find(armorSubname);
+            if (mapEntry != priorityNameMappings.end()) {
+                armorPriority = mapEntry->second;
             }
-            catch (const std::exception&) {
-                continue;
+            else {
+                std::string priorityMapping = configReader.Get("Priority", armorSubname, "");
+                try {
+                    armorPriority = std::stoul(priorityMapping);
+                }
+                catch (const std::exception&) {
+                    continue;
+                }
+
+                priorityNameMappings[armorSubname] = armorPriority;
             }
 
             std::string slots = configReader.Get(*sectionsIter, "slots", "");
@@ -300,11 +319,20 @@ bool LoadConfig() {
             auto boneName = overrideSection.substr(colonPos + 1);
 
             UInt32 overridePriority;
-            try {
-                overridePriority = std::stoul(overrideSubname);
+            auto mapEntry = priorityNameMappings.find(overrideSubname);
+            if (mapEntry != priorityNameMappings.end()) {
+                overridePriority = mapEntry->second;
             }
-            catch (const std::exception&) {
-                continue;
+            else {
+                std::string priorityMapping = configReader.Get("Priority", overrideSubname, "");
+                try {
+                    overridePriority = std::stoul(priorityMapping);
+                }
+                catch (const std::exception&) {
+                    continue;
+                }
+
+                priorityNameMappings[overrideSubname] = overridePriority;
             }
 
             // Get section contents
