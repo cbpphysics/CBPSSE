@@ -146,7 +146,7 @@ namespace papyrusObjectReference {
 		}
 
 		// Workshop ref isn't a workshop!
-		BSExtraData* extraDataWorkshop = workshopRef->extraDataList->GetByType(ExtraDataType::kExtraData_WorkshopExtraData);
+		Workshop::ExtraData* extraDataWorkshop = static_cast<Workshop::ExtraData*>(workshopRef->extraDataList->GetByType(ExtraDataType::kExtraData_WorkshopExtraData));
 		if(!extraDataWorkshop) {
 			return nullptr;
 		}
@@ -167,20 +167,26 @@ namespace papyrusObjectReference {
 		// Set the wire's linked ref to the workshop
 		SetLinkedRef_Native(wireRef, workshopRef, keyword);
 
-		LocationData locData(*g_player);
-		FinalizeWireLink(&locData, wireRef, refB, 0, refA, 0);
-		SetWireEndpoints_Internal(refA, 0, refB, 0, wireRef);
+		BSPointerHandle<TESObjectREFR> currentWorkshop = *Workshop::hCurrentWorkshop;
+
+		*Workshop::hCurrentWorkshop = workshopRef;
+
+		Workshop::ContextData contextData(*g_player);
+		SplineUtils::UpdateSpline(&contextData, wireRef, refB, 0, refA, 0);
+		SplineUtils::ConnectSpline(refA, 0, refB, 0, wireRef);
 
 		ExtraBendableSplineParams * splineParams = (ExtraBendableSplineParams*)wireRef->extraDataList->GetByType(kExtraData_BendableSplineParams);
 		if(splineParams) {
 			splineParams->thickness = 1.5f;
 		}
 
-		LinkPower3_Internal(extraDataWorkshop, wireRef);
-		LinkPower_Internal(extraDataWorkshop, refA, refB, wireRef);
-		LinkPower2_Internal(refA, extraDataWorkshop);
-		LinkPower2_Internal(refB, extraDataWorkshop);
-		LinkPower4_Internal(wireRef);
+		extraDataWorkshop->AddItem(wireRef);
+		extraDataWorkshop->AddConnection(refA, refB, wireRef);
+		PowerUtils::UpdateMovingWirelessItem(refA, extraDataWorkshop);
+		PowerUtils::UpdateMovingWirelessItem(refB, extraDataWorkshop);
+		TerminalUtils::EstablishTerminalLinks(wireRef);
+
+		*Workshop::hCurrentWorkshop = currentWorkshop;
 		return wireRef;
 	}
 
@@ -345,7 +351,7 @@ namespace papyrusObjectReference {
 				results.Push(&item.form);
 			}
 
-			inventory->inventoryLock.Unlock();
+			inventory->inventoryLock.UnlockRead();
 		}
 
 		return results;
@@ -487,7 +493,7 @@ namespace papyrusObjectReference {
 		}
 
 		// Workshop ref isn't a workshop!
-		BSExtraData* extraDataWorkshop = workshopRef->extraDataList->GetByType(ExtraDataType::kExtraData_WorkshopExtraData);
+		Workshop::ExtraData* extraDataWorkshop = static_cast<Workshop::ExtraData*>(workshopRef->extraDataList->GetByType(ExtraDataType::kExtraData_WorkshopExtraData));
 		if(!extraDataWorkshop) {
 			return false;
 		}
@@ -496,6 +502,10 @@ namespace papyrusObjectReference {
 		if(!extraData) {
 			return false;
 		}
+
+		BSPointerHandle<TESObjectREFR> previousWorkshop = *Workshop::hCurrentWorkshop;
+
+		*Workshop::hCurrentWorkshop = workshopRef;
 		
 		for(UInt32 i = 0; i < extraData->points.count; i++)
 		{
@@ -527,8 +537,8 @@ namespace papyrusObjectReference {
 					if(connected) {
 						try // Probably wont make a difference but doesnt hurt to try
 						{
-							LinkPower_Internal(extraDataWorkshop, refr, connected, nullptr);
-							LinkPower2_Internal(connected, extraDataWorkshop);
+							extraDataWorkshop->AddConnection(refr, connected, nullptr);
+							PowerUtils::UpdateMovingWirelessItem(connected, extraDataWorkshop);
 						}
 						catch (...)
 						{
@@ -539,7 +549,9 @@ namespace papyrusObjectReference {
 			}
 		}
 
-		LinkPower2_Internal(refr, extraDataWorkshop);
+		PowerUtils::UpdateMovingWirelessItem(refr, extraDataWorkshop);
+
+		*Workshop::hCurrentWorkshop = previousWorkshop;
 		return true;
 	}
 
@@ -555,7 +567,7 @@ namespace papyrusObjectReference {
 	}
 
 	struct CompareMaterial {
-		bool operator()(const std::pair<BGSMaterialSwap::MaterialSwap*,float> lhs, const std::pair<BGSMaterialSwap::MaterialSwap*,float> rhs) {
+		bool operator()(const std::pair<BGSMaterialSwap::MaterialSwap*,float> lhs, const std::pair<BGSMaterialSwap::MaterialSwap*,float> rhs) const {
 			return lhs.first->source < rhs.first->source;
 		}
 	};
@@ -588,7 +600,7 @@ namespace papyrusObjectReference {
 				if(geometry) 
 				{
 					NiPointer<BSShaderProperty> shaderProperty = ni_cast(geometry->shaderProperty, BSShaderProperty);
-					if(shaderProperty)
+					if(shaderProperty.get())
 					{
 						const char * shaderPath = shaderProperty->m_name.c_str();
 						std::string fullPath(shaderPath ? shaderPath : "");
@@ -669,24 +681,42 @@ namespace papyrusObjectReference {
 		return true;
 	}
 
-#ifdef _DEBUG
-	void ScrapLatent(UInt32 stackId, TESObjectREFR * refr)
+	bool ScrapLatent(UInt32 stackId, TESObjectREFR * refr, TESObjectREFR* akWorkshopRef)
 	{
-		LocationData locData(*g_player);
-		ScrapReference(&locData, &refr, nullptr);
+		Workshop::ContextData contextData(*g_player);
+
+		BSPointerHandle<TESObjectREFR> currentWorkshop = *Workshop::hCurrentWorkshop;
+
+		// Didn't specify a workshop
+		if (!akWorkshopRef)
+		{
+			// We are not in workshop mode, find a workshop
+			if (!currentWorkshop)
+				akWorkshopRef = Workshop::FindNearestValidWorkshop(refr);
+			else // Use the workshop from workshop mode
+				akWorkshopRef = currentWorkshop.get();
+		}
+		
+		if (!akWorkshopRef)
+			return false;
+
+		*Workshop::hCurrentWorkshop = akWorkshopRef;
+		NiPointer<TESObjectREFR> refrPointer(refr);
+		Workshop::ScrapReference(&contextData, &refrPointer, nullptr);
+		*Workshop::hCurrentWorkshop = currentWorkshop;
+		return true;
 	}
 
-	DECLARE_DELAY_FUNCTOR(F4SEScrapFunctor, 0, ScrapLatent, TESObjectREFR, void);
+	DECLARE_DELAY_FUNCTOR(F4SEScrapFunctor, 1, ScrapLatent, TESObjectREFR, bool, TESObjectREFR*);
 
-	bool Scrap(VirtualMachine * vm, UInt32 stackId, TESObjectREFR* refr)
+	bool Scrap(VirtualMachine * vm, UInt32 stackId, TESObjectREFR* refr, TESObjectREFR* akWorkshopRef)
 	{
 		if(!refr)
 			return false;
 
-		F4SEDelayFunctorManagerInstance().Enqueue(new F4SEScrapFunctor(ScrapLatent, vm, stackId, refr));
+		F4SEDelayFunctorManagerInstance().Enqueue(new F4SEScrapFunctor(ScrapLatent, vm, stackId, refr, akWorkshopRef));
 		return true;
 	}
-#endif
 }
 
 void papyrusObjectReference::RegisterFuncs(VirtualMachine* vm)
@@ -697,10 +727,7 @@ void papyrusObjectReference::RegisterFuncs(VirtualMachine* vm)
 	f4seObjRegistry.RegisterClass<F4SEConnectPointsFunctor>();
 	f4seObjRegistry.RegisterClass<F4SETransmitConnectedPowerFunctor>();
 	f4seObjRegistry.RegisterClass<F4SEMaterialSwapFunctor>();
-
-#ifdef _DEBUG
 	f4seObjRegistry.RegisterClass<F4SEScrapFunctor>();
-#endif
 
 	vm->RegisterFunction(
 		new NativeFunction0<VMRefOrInventoryObj, VMArray<BGSMod::Attachment::Mod*>>("GetAllMods", "ObjectReference", papyrusObjectReference::GetAllMods, vm));
@@ -741,10 +768,8 @@ void papyrusObjectReference::RegisterFuncs(VirtualMachine* vm)
 	vm->SetFunctionFlags("ObjectReference", "TransmitConnectedPower", IFunction::kFunctionFlag_NoWait);
 	vm->SetFunctionFlags("ObjectReference", "ApplyMaterialSwap", IFunction::kFunctionFlag_NoWait);
 
-#ifdef _DEBUG
 	vm->RegisterFunction(
-		new LatentNativeFunction0<TESObjectREFR, void>("Scrap", "ObjectReference", papyrusObjectReference::Scrap, vm));
+		new LatentNativeFunction1<TESObjectREFR, bool, TESObjectREFR*>("Scrap", "ObjectReference", papyrusObjectReference::Scrap, vm));
 
 	vm->SetFunctionFlags("ObjectReference", "Scrap", IFunction::kFunctionFlag_NoWait);
-#endif
 }

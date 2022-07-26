@@ -3,6 +3,7 @@
 #include "f4se/GameForms.h"
 #include "f4se/GameEvents.h"
 #include "f4se/GameCustomization.h"
+#include "f4se/GameHandle.h"
 #include "f4se/NiObjects.h"
 
 class BSActiveGraphIfInactiveEvent;
@@ -14,14 +15,6 @@ class ExtraDataList;
 class TESWorldSpace;
 class BGSScene;
 class TESQuest;
-
-typedef bool (* _CreateHandleByREFR)(UInt32 * handle, TESObjectREFR * ref);
-extern RelocAddr <_CreateHandleByREFR> CreateHandleByREFR;
-
-typedef bool (* _LookupREFRByHandle)(UInt32 * handle, TESObjectREFR ** ref);
-extern RelocAddr <_LookupREFRByHandle> LookupREFRByHandle;
-
-extern RelocPtr <UInt32> g_invalidRefHandle;
 
 typedef bool (* _HasDetectionLOS)(Actor* source, TESObjectREFR* target, UInt8 * unk1);
 extern RelocAddr<_HasDetectionLOS> HasDetectionLOS;
@@ -53,6 +46,11 @@ public:
 	{
 		if((InterlockedDecrement(&m_uiRefCount) & kMask_RefCount) == 0)
 			DeleteThis();
+	}
+
+	UInt32 QRefCount() const
+	{
+		return m_uiRefCount & kMask_RefCount;
 	}
 };
 
@@ -238,7 +236,8 @@ public:
 	UInt32										unk104;					// 104
 	UInt32										unk108;					// 108
 
-	UInt32 CreateRefHandle(void);
+	void IncRef() { handleRefObject.IncRef(); }
+	void DecRef() { handleRefObject.DecRef(); }
 
 	MEMBER_FN_PREFIX(TESObjectREFR);
 	DEFINE_MEMBER_FN(GetReferenceName, const char *, 0x0040B760);
@@ -408,9 +407,9 @@ public:
 				EquippedWeaponData	* equippedData;	// 20
 			};
 
-			EquipData * equipData;		// 288
+			tArray<EquipData> equipData;		// 288
 
-			UInt64	unk290[(0x3A0 - 0x290) >> 3];
+			UInt64	unk290[(0x3A0 - 0x2A0) >> 3];
 			UInt32	unk3A0;				// 3A0
 			UInt32	furnitureHandle1;	// 3A4
 			UInt32	furnitureHandle2;	// 3A8
@@ -426,6 +425,7 @@ public:
 			UInt16	unk494;				// 494
 			UInt16	unk496;				// 496 - somekind of dirty flag?
 		};
+		STATIC_ASSERT(offsetof(Data08, furnitureHandle1) == 0x3A4);
 
 		Data08 * unk08;	// 08
 
@@ -455,7 +455,10 @@ public:
 	TESRace			* race;				// 418
 	UInt64			unk420;				// 420
 	ActorEquipData	* equipData;		// 428
-	UInt64	unk430[(0x490-0x430)/8];	// 430
+	UInt64	unk430;						// 430
+	UInt32	unk438;						// 438
+	UInt32	uiFlags;					// 43C
+	UInt64	unk440[(0x490-0x440)/8];	// 440
 
 	bool IsPlayerTeammate()
 	{
@@ -466,10 +469,12 @@ public:
 	MEMBER_FN_PREFIX(Actor);
 	DEFINE_MEMBER_FN(QueueUpdate, void, 0x00D8A1F0, bool bDoFaceGen, UInt32 unk2, bool DoQueue, UInt32 flags); // 0, 0, 1, 0
 	DEFINE_MEMBER_FN(IsHostileToActor, bool, 0x00D91080, Actor * actor);
-	DEFINE_MEMBER_FN(UpdateEquipment, void, 0x00408270); 
+	DEFINE_MEMBER_FN(UpdateEquipment, void, 0x00408270); // TESObjectREFR::ReplaceModel
 };
 STATIC_ASSERT(offsetof(Actor, equipData) == 0x428);
+STATIC_ASSERT(offsetof(Actor, uiFlags) == 0x43C);
 STATIC_ASSERT(offsetof(Actor::MiddleProcess::Data08, equipData) == 0x288);
+STATIC_ASSERT(sizeof(Actor) == 0x490);
 
 // E10
 class PlayerCharacter : public Actor

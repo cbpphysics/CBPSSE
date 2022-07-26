@@ -22,7 +22,7 @@ namespace papyrusUI
 	{
 		if(!(*g_ui)->IsMenuRegistered(menuName) && !menuData.IsNone())
 		{
-			BSReadAndWriteLocker locker(&g_customMenuLock);
+			BSWriteLocker locker(&g_customMenuLock);
 			g_customMenuData[menuName.c_str()].menuPath = menuPath;
 			g_customMenuData[menuName.c_str()].rootPath = rootPath;
 			menuData.Get("menuFlags", &g_customMenuData[menuName.c_str()].menuFlags);

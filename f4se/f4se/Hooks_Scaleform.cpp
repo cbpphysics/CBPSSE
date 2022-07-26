@@ -332,7 +332,7 @@ public:
 		bool result = false;
 		if(texture)
 		{
-			BSReadAndWriteLocker locker(&s_mountedTexturesLock);
+			BSWriteLocker locker(&s_mountedTexturesLock);
 
 			auto & textures = s_mountedTextures[menuName];
 			auto sit = textures.find(texture);
@@ -379,7 +379,7 @@ public:
 		bool result = false;
 		if(texture)
 		{
-			BSReadAndWriteLocker locker(&s_mountedTexturesLock);
+			BSWriteLocker locker(&s_mountedTexturesLock);
 			auto it = s_mountedTextures.find(menuName);
 			if(it != s_mountedTextures.end())
 			{
@@ -418,7 +418,7 @@ public:
 		// Unmount textures if the menu is being destroyed
 		if(!evn->isOpen)
 		{
-			BSReadAndWriteLocker locker(&s_mountedTexturesLock);
+			BSWriteLocker locker(&s_mountedTexturesLock);
 			auto it = s_mountedTextures.find(evn->menuName.c_str());
 			if(it != s_mountedTextures.end())
 			{

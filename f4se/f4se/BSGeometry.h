@@ -4,7 +4,7 @@
 #include "f4se/BSSkin.h"
 
 class NiProperty;
-class ID3D11Buffer;
+struct ID3D11Buffer;
 
 // 38
 struct BSGeometrySegmentFlagData

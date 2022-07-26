@@ -36,6 +36,7 @@
     <ClCompile Include="GameExtraData.cpp" />
     <ClCompile Include="GameFormComponents.cpp" />
     <ClCompile Include="GameForms.cpp" />
+    <ClCompile Include="GameHandle.cpp" />
     <ClCompile Include="GameInput.cpp" />
     <ClCompile Include="GameMemory.cpp" />
     <ClCompile Include="GameMenus.cpp" />
@@ -147,6 +148,7 @@
     <ClInclude Include="BSParticleShaderEmitter.h" />
     <ClInclude Include="BSSkin.h" />
     <ClInclude Include="CustomMenu.h" />
+    <ClInclude Include="GameHandle.h" />
     <ClInclude Include="NiSerialization.h" />
     <ClInclude Include="PapyrusArmor.h" />
     <ClInclude Include="PapyrusArmorAddon.h" />
@@ -269,7 +271,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>

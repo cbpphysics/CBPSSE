@@ -1,10 +1,6 @@
 #include "f4se/ScaleformValue.h"
 #include "f4se/GameEvents.h"
 
-RelocAddr <_GetFilterColorByType> GetFilterColorByType(0x020F2C90);
-RelocAddr <_ApplyColorFilter> ApplyColorFilter(0x020F2990);
-RelocAddr <_SetDefaultColors> SetDefaultColors(0x020F2BE0);
-
 RelocAddr <_GetExtDisplayInfo> GetExtDisplayInfo(0x0210DBE0);
 RelocAddr <_SetExtDisplayInfoAlpha> SetExtDisplayInfoAlpha(0x0210DEF0);
 RelocAddr <_SetExtDisplayInfo> SetExtDisplayInfo(0x0210DD70);
@@ -238,27 +234,26 @@ bool GFxValue::GotoLabeledFrame(const char * frameLabel, bool stop)
 
 void BSGFxShaderFXTarget::SetFilterColor(bool isHostile)
 {
-	UInt32 type = kColorNormal;
-	FilterColor color;
+	HUDColorTypes type = kHUDColorTypes_GameplayHUDColor;
+	NiColor color;
 	if(isHostile)
-		type = kColorWarning;
-	colorType = type;
+		type = kHUDColorTypes_WarningColor;
+	HUDColorType = type;
 
-	GetFilterColorByType(this, &color);
-	ApplyColorFilter(this, &color, 1.0f);
+	GetColorMultipliersFromType(&color);
+	EnableColorMultipliers(&color, 1.0f);
 }
 
 EventResult	BSGFxShaderFXTarget::ReceiveEvent(ApplyColorUpdateEvent * evn, void * dispatcher)
 {
-	FilterColor color;
-	if(((colorFlags >> 1) & 1) && colorType != kColorUnk7)
+	NiColor color;
+	if(((shaderFX.enabledStates >> 1) & 1) && HUDColorType != kHUDColorTypes_CustomColor)
 	{
-		FilterColor * filtered = GetFilterColorByType(this, &color);
-		ApplyColorFilter(this, filtered, blue);
+		EnableColorMultipliers(GetColorMultipliersFromType(&color), shaderFX.colorBrightness);
 	}
-	if((colorFlags & 1) && unkAC != 4)
+	if((shaderFX.enabledStates & 1) && backgroundColorType != kHUDColorTypes_PowerArmorColorOnly)
 	{
-		SetDefaultColors(this);
+		ApplyBackgroundColorFromType();
 	}
 	return kEvent_Continue;
 };

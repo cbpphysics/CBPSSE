@@ -18,9 +18,9 @@ namespace papyrusGame
 	TESObjectREFR * GetCurrentConsoleRef(StaticFunctionTag * base)
 	{
 		UInt32 handle = (*g_consoleHandle);
-		TESObjectREFR * refr = NULL;
+		NiPointer<TESObjectREFR> refr;
 		if(handle != 0 && handle != (*g_invalidRefHandle)) {
-			LookupREFRByHandle(&handle, &refr);
+			LookupREFRByHandle(handle, refr);
 			return refr;
 		}
 

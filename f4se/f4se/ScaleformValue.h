@@ -3,6 +3,7 @@
 #include "f4se_common/Utilities.h"
 #include "f4se/GameEvents.h"
 #include "f4se/ScaleformTypes.h"
+#include "f4se/NiTypes.h"
 
 class GFxMovieView;
 class GFxMovieRoot;
@@ -255,14 +256,14 @@ public:
 class BSGFxDisplayObject : public BSGFxObject
 {
 public:
-	BSGFxDisplayObject() : parent(nullptr), unk48(0), unk4C(0) { }
+	BSGFxDisplayObject() : parent(nullptr) { }
 	BSGFxDisplayObject(GFxValue * value) : BSGFxObject(value), parent(nullptr)
 	{
 		GFxValue width, height;
 		GetMember("width", &width);
 		GetMember("height", &height);
-		unk48 = width.GetNumber();
-		unk4C = height.GetNumber();
+		initialState.originalWidth = width.GetNumber();
+		initialState.originalHeight = height.GetNumber();
 	}
 	virtual ~BSGFxDisplayObject()
 	{
@@ -279,18 +280,65 @@ public:
 		GFxValue::DisplayInfo	displayInfo2;		// F0
 	};
 
-	GFxValue	* parent;	// 40
-	float		unk48;		// 48
-	float		unk4C;		// 4C
+	struct InitialDisplayState
+	{
+		InitialDisplayState() : originalWidth(0), originalHeight(0) {}
+
+		float originalWidth;
+		float originalHeight;
+	};
+
+	BSGFxDisplayObject*		parent;			// 40
+	InitialDisplayState		initialState;	// 48
 };
 STATIC_ASSERT(sizeof(BSGFxDisplayObject) == 0x50);
 STATIC_ASSERT(offsetof(BSGFxDisplayObject::BSDisplayInfo, displayInfo2) == 0xF0);
 
 class BSGFxShaderFXTarget;
 
-struct FilterColor
+// 38
+struct UIShaderColors
 {
-	float r, g, b;
+	UIShaderColors() : colorBrightness(0), enabledStates(0)
+	{
+		backgroundQuad.m_top = 0;
+		backgroundQuad.m_bottom = 0;
+		backgroundQuad.m_left = 0;
+		backgroundQuad.m_right = 0;
+	}
+
+	enum Flags
+	{
+		kBackgroundQuad			= (1 << 0),
+		kColorMultiplier		= (1 << 1),
+		kVerticalGradient		= (1 << 2),
+		kUseAlphaForDropshadow	= (1 << 3)
+	};
+
+	NiRect<float> backgroundQuad;	// 00
+	NiColorA backgroundColor;		// 10
+	NiColorA colorMultipliers;		// 20
+	float colorBrightness;			// 30
+	int enabledStates;				// 34
+};
+
+// 48
+struct UIShaderFXInfo
+{
+	NiRect<float> renderQuad;	// 00
+	UIShaderColors shaderFX;	// 10
+};
+
+enum HUDColorTypes
+{
+	kHUDColorTypes_NoColorMultiplier = 0,
+	kHUDColorTypes_MenuNoColorBackground,
+	kHUDColorTypes_GameplayHUDColor,
+	kHUDColorTypes_PlayerSetColor,
+	kHUDColorTypes_PowerArmorColorOnly,
+	kHUDColorTypes_WarningColor,
+	kHUDColorTypes_AltWarningColor,
+	kHUDColorTypes_CustomColor
 };
 
 // B0
@@ -300,47 +348,20 @@ class BSGFxShaderFXTarget : public BSGFxDisplayObject,
 public:
 	BSGFxShaderFXTarget() { }
 	BSGFxShaderFXTarget(GFxValue * source) : BSGFxDisplayObject(source), 
-		unk58(0), unk60(0), unk68(0), unk6C(0), unk70(0), unk74(0), unk78(0), unk7C(0), red(0), 
-		green(0), blue(0), multiplier(0), unk94(0), unk98(0), unkA0(0), colorType(0), unkAC(0) {  }//{ CALL_MEMBER_FN(this, Impl_ctor)(source); }
+		HUDColorType(kHUDColorTypes_NoColorMultiplier), backgroundColorType(kHUDColorTypes_NoColorMultiplier) {  }//{ CALL_MEMBER_FN(this, Impl_ctor)(source); }
 	virtual ~BSGFxShaderFXTarget();// { CALL_MEMBER_FN(this, Impl_dtor)(); };
 
-	virtual void Unk_01(void * unk1, void * unk2)
+	virtual void AppendShaderFXInfos(BSTArray<UIShaderFXInfo>* colorFX, BSTArray<UIShaderFXInfo>* backgroundFX)
 	{
-		Impl_Fn1(unk1, unk2);
+		Impl_AppendShaderFXInfos(colorFX, backgroundFX);
 	};
 
 	virtual	EventResult	ReceiveEvent(ApplyColorUpdateEvent * evn, void * dispatcher);
 
-	enum ColorTypes
-	{
-		kColorUnk1 = 0,
-		kColorUnk2,
-		kColorNormal,
-		kColorUnk3,
-		kColorUnk4,
-		kColorWarning,
-		kColorUnk6,
-		kColorUnk7
-	};
-
-	UInt64	unk58;			// 58
-	UInt64	unk60;			// 60
-	float	unk68;			// 68
-	float	unk6C;			// 6C
-	float	unk70;			// 70
-	float	unk74;			// 74
-	float	unk78;			// 78
-	float	unk7C;			// 7C
-	float	red;			// 80
-	float	green;			// 84
-	float	blue;			// 88
-	UInt32	colorFlags;		// 8C
-	float	multiplier;		// 90
-	UInt32	unk94;			// 94
-	UInt64	unk98;			// 98
-	UInt64	unkA0;			// A0
-	UInt32	colorType;		// A8
-	UInt32	unkAC;			// AC
+	UIShaderColors shaderFX;						// 38
+	BSTArray<BSGFxShaderFXTarget*> shaderFXObjects;	// 
+	HUDColorTypes HUDColorType;						// 
+	HUDColorTypes backgroundColorType;
 
 	DEFINE_STATIC_HEAP(Heap_Allocate, Heap_Free)
 
@@ -348,22 +369,15 @@ public:
 
 	// 98B654B565F35633CBE8804A5CBF84646AE30A1B+9
 	DEFINE_MEMBER_FN_1(Impl_ctor, BSGFxShaderFXTarget *, 0x020F1770, GFxValue * source);
+	DEFINE_MEMBER_FN_2(Impl_ctor_2, BSGFxShaderFXTarget*, 0x020F1890, GFxValue* source, const char* memberName);
+	DEFINE_MEMBER_FN_2(Impl_ctor_3, BSGFxShaderFXTarget*, 0x020F19B0, GFxMovieView* source, const char* memberName);
 	DEFINE_MEMBER_FN_0(Impl_dtor, void, 0x020F16D0);
-	DEFINE_MEMBER_FN_2(Impl_Fn1, void, 0x020F1BF0, void * unk1, void * unk2);
+	DEFINE_MEMBER_FN_2(Impl_AppendShaderFXInfos, void, 0x020F1BF0, BSTArray<UIShaderFXInfo>* colorFX, BSTArray<UIShaderFXInfo>* backgroundFX);
+	DEFINE_MEMBER_FN_1(GetColorMultipliersFromType, NiColor*, 0x020F2C90, NiColor* result); // This function acquires the HUD color by type e.g. normal, PA, hostile
+	DEFINE_MEMBER_FN_2(EnableColorMultipliers, void, 0x020F2990, const NiColor* color, float brightness); // Sets explicit component filter color
+	DEFINE_MEMBER_FN_0(ApplyBackgroundColorFromType, void, 0x020F2BE0);
 };
-STATIC_ASSERT(offsetof(BSGFxShaderFXTarget, red) == 0x80);
 STATIC_ASSERT(sizeof(BSGFxShaderFXTarget) == 0xB0);
-
-// This function acquires the HUD color by type e.g. normal, PA, hostile
-typedef FilterColor * (* _GetFilterColorByType)(BSGFxShaderFXTarget * component, FilterColor * color);
-extern RelocAddr <_GetFilterColorByType> GetFilterColorByType;
-
-// Sets explicit component filter color
-typedef void (* _ApplyColorFilter)(BSGFxShaderFXTarget * component, FilterColor * color, float unk1);
-extern RelocAddr <_ApplyColorFilter> ApplyColorFilter;
-
-typedef void (* _SetDefaultColors)(BSGFxShaderFXTarget * component);
-extern RelocAddr <_SetDefaultColors> SetDefaultColors;
 
 typedef void * (* _GetExtDisplayInfo)(BSGFxDisplayObject::BSDisplayInfo * dInfo, BSGFxDisplayObject * target);
 extern RelocAddr <_GetExtDisplayInfo> GetExtDisplayInfo;

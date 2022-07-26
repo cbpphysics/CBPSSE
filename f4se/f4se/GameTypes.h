@@ -2,6 +2,7 @@
 
 #include "f4se_common/Utilities.h"
 #include "f4se/GameAPI.h"
+#include "f4se/GameUtilities.h"
 
 class TESForm;
 
@@ -53,18 +54,11 @@ class BSReadWriteLock
 public:
 	BSReadWriteLock() : threadID(0), lockValue(0) {}
 
-	//void LockForRead();
-	//void LockForWrite();
-
 	DEFINE_MEMBER_FN_0(LockForRead, void, 0x01B10930);
 	DEFINE_MEMBER_FN_0(LockForWrite, void, 0x01B109B0);
 
-	void LockForReadAndWrite();
-
-	bool TryLockForWrite();
-	bool TryLockForRead();
-
-	void Unlock();
+	DEFINE_MEMBER_FN_0(UnlockRead, void, 0x01B10BF0);
+	DEFINE_MEMBER_FN_0(UnlockWrite, void, 0x01B10C00);
 };
 STATIC_ASSERT(sizeof(BSReadWriteLock) == 0x8);
 
@@ -72,7 +66,7 @@ class BSReadLocker
 {
 public:
 	BSReadLocker(BSReadWriteLock * lock) { m_lock = lock; m_lock->LockForRead(); }
-	~BSReadLocker() { m_lock->Unlock(); }
+	~BSReadLocker() { m_lock->UnlockRead(); }
 
 protected:
 	BSReadWriteLock	* m_lock;
@@ -82,17 +76,7 @@ class BSWriteLocker
 {
 public:
 	BSWriteLocker(BSReadWriteLock * lock) { m_lock = lock; m_lock->LockForWrite(); }
-	~BSWriteLocker() { m_lock->Unlock(); }
-
-protected:
-	BSReadWriteLock	* m_lock;
-};
-
-class BSReadAndWriteLocker
-{
-public:
-	BSReadAndWriteLocker(BSReadWriteLock * lock) { m_lock = lock; m_lock->LockForReadAndWrite(); }
-	~BSReadAndWriteLocker() { m_lock->Unlock(); }
+	~BSWriteLocker() { m_lock->UnlockWrite(); }
 
 protected:
 	BSReadWriteLock	* m_lock;
@@ -440,6 +424,13 @@ public:
 	DEFINE_STATIC_HEAP(Heap_Allocate, Heap_Free)
 };
 
+// Because aliasing via using doesn't work in this version of C++
+template <class T, int nGrow = 10, int nShrink = 10>
+class BSTArray : public tArray<T, nGrow, nShrink>
+{
+public:
+};
+
 template<class T>
 class tMutexArray : public tArray<T>
 {
@@ -718,7 +709,7 @@ public:
 
 		NodePos pos = GetNthNode(index);
 		_Node* pTargetNode = pos.node;
-		_Node* newNode = (_Node*)FormHeap_Allocate(sizeof(newNode));
+		_Node* newNode = (_Node*)FormHeap_Allocate(sizeof(_Node));
 		if (newNode && pTargetNode) {
 			if (index == eListEnd) {
 				pTargetNode->next = newNode;
@@ -783,11 +774,6 @@ public:
 			}	
 		}
 		return curIt;
-	}
-
-	const _Node* FindString(char* str, Iterator prev) const
-	{
-		return Find(StringFinder_CI(str), prev);
 	}
 
 	template <class Op>
@@ -1211,7 +1197,7 @@ public:
 	}
 
 	template <typename T>
-	void ForEach(T& functor)
+	void ForEach(const T& functor)
 	{
 		if (!m_entries)
 			return;
@@ -1267,6 +1253,8 @@ public:
 template <typename Key, typename Item>
 typename tHashSet<Key,Item>::_Entry tHashSet<Key,Item>::sentinel = tHashSet<Key,Item>::_Entry();
 
+STATIC_ASSERT(sizeof(tHashSet<UInt32, void*>) == 0x30);
+
 template <typename T>
 class SafeDataHolder
 {
@@ -1277,4 +1265,728 @@ public:
 
 	void	Lock(void) { m_lock.Lock(); }
 	void	Release(void) { m_lock.Release(); }
+};
+
+#if 0
+// Because we cant use 'using' in this version
+template <typename Item, typename Key = Item>
+class BSTHashMap : public tHashSet<Item, Key>
+{
+public:
+};
+#endif
+
+template <class T1, class T2>
+struct BSTTuple
+{
+public:
+	BSTTuple() :
+		first(),
+		second()
+	{}
+
+	BSTTuple(const T1& a_first, const T2& a_second) :
+		first(a_first),
+		second(a_second)
+	{}
+
+	BSTTuple& operator=(const BSTTuple& a_rhs)
+	{
+		first = a_rhs.first;
+		second = a_rhs.second;
+	}
+
+
+	BSTTuple& operator=(BSTTuple&& a_rhs)
+	{
+		first = std::move(a_rhs.first);
+		second = std::move(a_rhs.second);
+	}
+
+	T1 first;	// 00
+	T2 second;	// ??
+};
+
+template <class Traits, UInt32 N, template <class, UInt32> class Allocator, class Hash, class KeyEqual>
+struct BSTScatterTable
+{
+public:
+	typedef Traits traits_type;
+	typedef typename traits_type::key_type key_type;
+	typedef typename traits_type::mapped_type mapped_type;
+	typedef typename traits_type::value_type value_type;
+	typedef UInt32 size_type;
+	typedef Hash hasher;
+	typedef KeyEqual key_equal;
+
+	struct BSTScatterTableEntry
+	{
+	public:
+		BSTScatterTableEntry() :
+			value(),
+			next(0)
+		{}
+
+
+		BSTScatterTableEntry(const BSTScatterTableEntry& a_rhs) :
+			value(a_rhs.value),
+			next(a_rhs.next)
+		{}
+
+
+		BSTScatterTableEntry(BSTScatterTableEntry&& a_rhs) :
+			value(std::move(a_rhs.value)),
+			next(std::move(a_rhs.next))
+		{
+			a_rhs.next = 0;
+		}
+
+
+		BSTScatterTableEntry& operator=(const BSTScatterTableEntry& a_rhs)
+		{
+			value = a_rhs.value;
+			next = a_rhs.next;
+			return *this;
+		}
+
+
+		BSTScatterTableEntry& operator=(BSTScatterTableEntry&& a_rhs)
+		{
+			value = std::move(a_rhs.value);
+			next = std::move(a_rhs.next);
+			a_rhs.next = 0;
+
+			return *this;
+		}
+
+
+		value_type			  value;  // 00
+		BSTScatterTableEntry* next;	  // ??
+	};
+
+
+	typedef BSTScatterTableEntry entry_type;
+	typedef Allocator<entry_type, N> allocator_type;
+
+	static entry_type sentinel;
+
+	template <class U>
+	struct iterator_base
+	{
+	public:
+		typedef std::ptrdiff_t difference_type;
+		typedef U value_type;
+		typedef U* pointer;
+		typedef U& reference;
+		typedef std::forward_iterator_tag iterator_category;
+
+
+		iterator_base() :
+			_entry(nullptr),
+			_end(nullptr)
+		{}
+
+
+		iterator_base(const iterator_base& a_rhs) :
+			_entry(a_rhs._entry),
+			_end(a_rhs._end)
+		{}
+
+
+		iterator_base(iterator_base&& a_rhs) :
+			_entry(std::move(a_rhs._entry)),
+			_end(a_rhs._end)
+		{
+			a_rhs._entry = a_rhs._end;
+		}
+
+
+		iterator_base(entry_type* a_entry, entry_type* a_end) :
+			_entry(a_entry),
+			_end(a_end)
+		{
+			while (_entry != _end && !_entry->next) {
+				++_entry;
+			}
+		}
+
+
+		~iterator_base()
+		{}
+
+
+		iterator_base& operator=(const iterator_base& a_rhs)
+		{
+			ASSERT(_end == a_rhs._end);
+			_entry = a_rhs._entry;
+		}
+
+
+		iterator_base& operator=(iterator_base&& a_rhs)
+		{
+			ASSERT(_end == a_rhs._end);
+			_entry = std::move(a_rhs._entry);
+			a_rhs._entry = a_rhs._end;
+		}
+
+
+		void swap(iterator_base& a_rhs)
+		{
+			ASSERT(_end == a_rhs._end);
+			std::swap(_entry, a_rhs._entry);
+		}
+
+
+		reference operator*() const
+		{
+			ASSERT(_entry != _end);
+			return _entry->value;
+		}
+
+
+		pointer operator->() const
+		{
+			return std::addressof(_entry->value);
+		}
+
+
+		bool operator==(const iterator_base& a_rhs) const
+		{
+			ASSERT(_end == a_rhs._end);
+			return _entry == a_rhs._entry;
+		}
+
+
+		bool operator!=(const iterator_base& a_rhs) const
+		{
+			ASSERT(_end == a_rhs._end);
+			return !operator==(a_rhs);
+		}
+
+
+		// prefix
+		iterator_base& operator++()
+		{
+			ASSERT(_entry != _end);
+			do {
+				++_entry;
+			} while (_entry != _end && !_entry->next);
+			return *this;
+		}
+
+
+		// postfix
+		iterator_base operator++(int)
+		{
+			iterator_base tmp{ *this };
+			operator++();
+			return tmp;
+		}
+
+	private:
+		entry_type* _entry;
+		entry_type* _end;
+	};
+
+
+	typedef iterator_base<value_type> iterator;
+	typedef iterator_base<const value_type> const_iterator;
+
+
+	BSTScatterTable() :
+		_pad00(0),
+		_pad08(0),
+		_capacity(0),
+		_freeCount(0),
+		_freeIdx(0),
+		_sentinel((const entry_type*)&sentinel),
+		_allocator()
+	{}
+
+	DEFINE_STATIC_HEAP(Heap_Allocate, Heap_Free)
+
+	iterator begin()
+	{
+		return get_entries() ? make_iterator(get_entries()) : iterator();
+	}
+
+
+	const_iterator begin() const
+	{
+		return get_entries() ? make_iterator(get_entries()) : const_iterator();
+	}
+
+
+	const_iterator cbegin() const
+	{
+		return begin();
+	}
+
+
+	iterator end()
+	{
+		return get_entries() ? make_iterator(get_entries() + _capacity) : iterator();
+	}
+
+
+	const_iterator end() const
+	{
+		return get_entries() ? make_iterator(get_entries() + _capacity) : const_iterator();
+	}
+
+
+	const_iterator cend() const
+	{
+		return end();
+	}
+
+
+	bool empty() const
+	{
+		return !get_entries() || _freeCount == 0;
+	}
+
+
+	size_type size() const
+	{
+		return _capacity - _freeCount;
+	}
+
+
+	size_type max_size() const
+	{
+		return _allocator.max_size();
+	}
+
+
+	std::pair<iterator, bool> insert(const value_type& a_value)
+	{
+		return insert_impl(false, a_value);
+	}
+
+
+	std::pair<iterator, bool> insert(value_type&& a_value)
+	{
+		return insert_impl(false, std::move(a_value));
+	}
+
+
+	std::pair<iterator, bool> insert_or_assign(const value_type& a_value)
+	{
+		return insert_impl(true, a_value);
+	}
+
+
+	std::pair<iterator, bool> insert_or_assign(value_type&& a_value)
+	{
+		return insert_impl(true, std::move(a_value));
+	}
+
+
+	size_type erase(const key_type& a_key)
+	{
+		if (!get_entries()) {  // no entries
+			return 0;
+		}
+
+		auto entry = calc_pos(a_key);
+		if (!entry->next) {	 // key not in table
+			return 0;
+		}
+
+		entry_type* tail = 0;
+		while (!comp_key(get_key(entry->value), a_key)) {  // find key in table
+			tail = entry;
+			entry = entry->next;
+			if (entry == _sentinel) {
+				return 0;
+			}
+		}
+
+		entry->value.~value_type();
+
+		if (entry->next == _sentinel) {	 // if no chain
+			if (tail) {
+				tail->next = const_cast<entry_type*>(_sentinel);
+			}
+			entry->next = 0;
+		}
+		else {  // else move next entry into current
+			new (entry) entry_type(std::move(*entry->next));
+		}
+
+		++_freeCount;
+		return 1;
+	}
+
+
+	iterator find(const key_type& a_key)
+	{
+		auto entry = find_impl(a_key);
+		return entry ? make_iterator(entry) : end();
+	}
+
+
+	const_iterator find(const key_type& a_key) const
+	{
+		auto entry = find_impl(a_key);
+		return entry ? make_iterator(entry) : end();
+	}
+
+
+	void reserve(size_type a_count)
+	{
+		if (a_count <= _capacity) {
+			return;
+		}
+
+		UInt32		   leftShifts = 0;
+		while ((a_count & static_cast<UInt32>(1 << 31)) == 0) {
+			a_count <<= 1;
+			++leftShifts;
+		}
+		auto bitPos = 31 - leftShifts;
+		auto newCount = static_cast<UInt32>(1 << bitPos);
+		grow(newCount);
+	}
+
+
+	hasher hash_function() const
+	{
+		return hasher();
+	}
+
+
+	key_equal key_eq() const
+	{
+		return key_equal();
+	}
+
+private:
+	entry_type* find_impl(const key_type& a_key) const
+	{
+		if (!get_entries()) {
+			return nullptr;
+		}
+
+		auto probe = calc_pos(a_key);  // try ideal pos
+		if (!probe->next) {
+			return nullptr;	 // nothing there
+		}
+
+		do {
+			if (comp_key(get_key(probe->value), a_key)) {
+				return probe;
+			}
+			else {
+				probe = probe->next;
+			}
+		} while (probe != _sentinel);  // follow chain
+
+		return nullptr;
+	}
+
+
+	template <class Arg>
+	std::pair<iterator, bool> insert_impl(bool a_overwrite, Arg&& a_value)
+	{
+		if (!get_entries() || !_freeCount) {
+			if (!grow()) {
+				return std::make_pair(end(), false);  // maybe throw?
+			}
+		}
+
+		auto idealEntry = calc_pos(get_key(a_value));
+		if (!idealEntry->next) {  // if slot empty
+			new (std::addressof(idealEntry->value)) value_type(std::forward<Arg>(a_value));
+			idealEntry->next = const_cast<entry_type*>(_sentinel);
+			return std::make_pair(make_iterator(idealEntry), true);
+		}
+
+		for (auto iter = idealEntry; iter != _sentinel; iter = iter->next) {
+			if (comp_key(get_key(iter->value), get_key(a_value))) {	 // if entry already in table
+				if (a_overwrite) {
+					iter->value.~value_type();
+					new (std::addressof(iter->value)) value_type(std::forward<Arg>(a_value));
+				}
+				return std::make_pair(make_iterator(iter), false);
+			}
+		}
+
+		auto freeEntry = get_free_entry();
+
+		auto takenIdealEntry = calc_pos(get_key(idealEntry->value));
+		if (takenIdealEntry == idealEntry) {  // if entry occupying our slot would've hashed here anyway
+			freeEntry->next = idealEntry->next;
+			idealEntry->next = freeEntry;
+			new (std::addressof(freeEntry->value)) value_type(std::forward<Arg>(a_value));
+			return std::make_pair(make_iterator(freeEntry), true);
+		}
+
+		while (takenIdealEntry->next != idealEntry) {  // find entry that links here
+			takenIdealEntry = takenIdealEntry->next;
+		}
+
+		// move taken slot out, so we can move in
+		new (std::addressof(freeEntry->value)) value_type(std::move(idealEntry->value));
+		freeEntry->next = idealEntry->next;
+		takenIdealEntry->next = freeEntry;
+		new (std::addressof(idealEntry->value)) value_type(std::forward<Arg>(a_value));
+		idealEntry->next = const_cast<entry_type*>(_sentinel);
+		return std::make_pair(make_iterator(idealEntry), true);
+	}
+
+
+	iterator make_iterator(entry_type* a_entry)
+	{
+		return iterator(a_entry, get_entries() + _capacity);
+	}
+
+
+	const_iterator make_iterator(entry_type* a_entry) const
+	{
+		return const_iterator(a_entry, get_entries() + _capacity);
+	}
+
+
+	UInt32 calc_hash(const key_type& a_key) const
+	{
+		return hash_function()(a_key);
+	}
+
+
+	UInt32 calc_idx(const key_type& a_key) const
+	{
+		return calc_hash(a_key) & (_capacity - 1);	// capacity is always a factor of 2, so this is a faster modulo
+	}
+
+
+	entry_type* calc_pos(const key_type& a_key) const
+	{
+		return const_cast<entry_type*>(get_entries() + calc_idx(a_key));
+	}
+
+
+	// assumes not empty
+	entry_type* get_free_entry()
+	{
+		entry_type* entry = nullptr;
+		do {
+			_freeIdx = (_capacity - 1) & (_freeIdx - 1);
+			entry = get_entries() + _freeIdx;
+		} while (entry->next);
+
+		--_freeCount;
+		return entry;
+	}
+
+
+	bool comp_key(const key_type& a_lhs, const key_type& a_rhs) const
+	{
+		return key_eq()(a_lhs, a_rhs);
+	}
+
+
+	bool grow()
+	{
+		if (_capacity == (UInt32)1 << 31) {
+			return false;
+		}
+
+		UInt32 newCapacity = _capacity ? _capacity << 1 : min_size();
+		return grow(newCapacity);
+	}
+
+
+	bool grow(UInt32 a_newCapacity)
+	{
+		auto oldEntries = get_entries();
+		auto begIter = begin();
+		auto endIter = end();
+
+		auto newEntries = allocate(a_newCapacity);
+		if (!newEntries) {
+			return false;
+		}
+		else if (newEntries == oldEntries) {
+			_capacity = a_newCapacity;
+			return true;
+		}
+		else {
+			_capacity = a_newCapacity;
+			_freeCount = a_newCapacity;
+			_freeIdx = a_newCapacity;
+			set_entries(newEntries);
+
+			while (begIter != endIter) {
+				insert(std::move(*begIter));
+				++begIter;
+			}
+
+			deallocate(oldEntries);
+			return true;
+		}
+	}
+
+
+	const key_type& get_key(const value_type& a_value) const
+	{
+		traits_type traits;
+		return traits(a_value);
+	}
+
+
+	entry_type* allocate(std::size_t a_num)
+	{
+		return _allocator.allocate(a_num);
+	}
+
+
+	void deallocate(entry_type* a_ptr)
+	{
+		_allocator.deallocate(a_ptr);
+	}
+
+
+	entry_type* get_entries() const
+	{
+		return _allocator.get_entries();
+	}
+
+
+	void set_entries(entry_type* a_entries)
+	{
+		_allocator.set_entries(a_entries);
+	}
+
+
+	size_type min_size() const
+	{
+		return _allocator.min_size();
+	}
+
+	// members
+	UInt64			  _pad00;	   // 00
+	UInt32			  _pad08;	   // 08
+	UInt32			  _capacity;   // 0C - this must be 2^n, or else terrible things will happen
+	UInt32			  _freeCount;  // 10
+	UInt32			  _freeIdx;	   // 14
+	const entry_type* _sentinel;   // 18
+	allocator_type	  _allocator;  // 20
+};
+
+
+template <class Key, class T>
+struct BSTScatterTableTraits
+{
+public:
+	typedef Key key_type;
+	typedef T mapped_type;
+	typedef BSTTuple<const Key, T> value_type;
+
+
+	const key_type& operator()(const value_type& a_value) const
+	{
+		return a_value.first;
+	}
+};
+
+template <class T, UInt32 N = 8>
+struct BSTScatterTableHeapAllocator
+{
+public:
+	typedef T entry_type;
+	typedef UInt32 size_type;
+
+
+	BSTScatterTableHeapAllocator() :
+		_pad00(0),
+		_entries(0)
+	{}
+
+
+	entry_type* allocate(std::size_t a_num)
+	{
+		auto size = a_num * sizeof(entry_type);
+		auto mem = (entry_type*)Heap_Allocate(size);
+		memset(mem, 0, size);
+		return mem;
+	}
+
+
+	void deallocate(entry_type* a_ptr)
+	{
+		Heap_Free(a_ptr);
+	}
+
+
+	entry_type* get_entries() const
+	{
+		return _entries;
+	}
+
+
+	void set_entries(entry_type* a_entries)
+	{
+		_entries = a_entries;
+	}
+
+
+	size_type min_size() const
+	{
+		return static_cast<size_type>(1) << 3;
+	}
+
+
+	size_type max_size() const
+	{
+		return static_cast<size_type>(1) << 31;
+	}
+
+private:
+	// members
+	UInt64		_pad00;	   // 00 (20)
+	entry_type* _entries;  // 08 (28)
+};
+STATIC_ASSERT(sizeof(BSTScatterTableHeapAllocator<void*, 8>) == 0x10);
+
+
+template <class Key, class T, class Hash = BSHash::CRC32Hash<Key>, class KeyEqual = std::equal_to<Key>>
+class BSTHashMap : public BSTScatterTable<BSTScatterTableTraits<Key, T>, 8, BSTScatterTableHeapAllocator, Hash, KeyEqual>
+{
+public:
+};
+STATIC_ASSERT(sizeof(BSTHashMap<UInt32, void*>) == 0x30);
+
+
+template <class Key>
+struct BSTSetTraits
+{
+public:
+	typedef Key key_type;
+	typedef void mapped_type;
+	typedef Key value_type;
+
+	const key_type& operator()(const value_type& a_value) const
+	{
+		return a_value;
+	}
+};
+
+
+template <class Key, class Hash = BSHash::CRC32Hash<Key>, class KeyEqual = std::equal_to<Key>>
+class BSTSet : public BSTScatterTable<BSTSetTraits<Key>, 8, BSTScatterTableHeapAllocator, Hash, KeyEqual>
+{
+public:
+};
+STATIC_ASSERT(sizeof(BSTSet<UInt32, void*>) == 0x30);
+
+template <class Traits, UInt32 N, template <class, UInt32> class Allocator, class Hash, class KeyEqual>
+typename BSTScatterTable<Traits,N, Allocator,Hash,KeyEqual>::BSTScatterTableEntry BSTScatterTable<Traits, N, Allocator, Hash, KeyEqual>::sentinel = BSTScatterTable<Traits, N, Allocator, Hash, KeyEqual>::BSTScatterTableEntry();
+
+template <class T>
+class BSTOptional
+{
+	T AlignedBuffer;
+	bool hasValue;
 };

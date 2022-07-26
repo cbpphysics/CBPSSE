@@ -3,11 +3,134 @@
 #include "GameAPI.h"
 #include "f4se_common/Utilities.h"
 #include "f4se_common/f4se_version.h"
+#include "f4se_common/BranchTrampoline.h"
+
+#include <cassert>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+
+namespace
+{
+	class ScopeExit
+	{
+	public:
+		ScopeExit(std::function<void()> fn) :
+			m_fn(std::move(fn))
+		{
+			assert(m_fn);
+		}
+
+		~ScopeExit()
+		{
+			if (m_fn)
+			{
+				m_fn();
+			}
+		}
+
+	private:
+		std::function<void()> m_fn;
+
+		ScopeExit(const ScopeExit&);
+		ScopeExit(ScopeExit&&);
+
+		ScopeExit& operator=(const ScopeExit&);
+		ScopeExit& operator=(ScopeExit&&);
+	};
+
+	std::string CheckModNotFound(const char* a_plugin)
+	{
+		assert(a_plugin != nullptr);
+
+		const auto file = LoadLibraryExA(
+			a_plugin,
+			NULL,
+			LOAD_LIBRARY_AS_DATAFILE);
+		if (file == NULL)
+		{
+			return "failed to load resource with error code " + std::to_string(GetLastError());
+		}
+		ScopeExit _file([&]() { FreeLibrary(file); });
+
+		const auto base = reinterpret_cast<const char*>(
+			reinterpret_cast<std::uintptr_t>(file) & 
+			~(static_cast<std::uintptr_t>(0xFFFF)));	// https://devblogs.microsoft.com/oldnewthing/20051006-09/?p=33883
+		const auto dosHeader = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
+		const auto ntHeader = reinterpret_cast<const IMAGE_NT_HEADERS64*>(base + dosHeader->e_lfanew);
+		const auto sections = IMAGE_FIRST_SECTION(ntHeader);
+		const auto adjustRVA = [&](std::size_t rva) -> DWORD
+		{
+			for (WORD i = 0; i < ntHeader->FileHeader.NumberOfSections; ++i)
+			{
+				const auto section = sections[i];
+				if (section.VirtualAddress <= rva && rva < section.VirtualAddress + section.Misc.VirtualSize)
+				{
+					return rva - section.VirtualAddress + section.PointerToRawData;
+				}
+			}
+			return 0;
+		};
+
+		const auto importDirectory = ntHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+		if (importDirectory.Size == 0)
+		{
+			return "no import entry to enumerate";
+		}
+
+		const auto imports = reinterpret_cast<const IMAGE_IMPORT_DESCRIPTOR*>(base + adjustRVA(importDirectory.VirtualAddress));
+		for (auto iter = imports; iter->Characteristics != 0; ++iter)
+		{
+			const auto name = reinterpret_cast<const char*>(base + adjustRVA(iter->Name));
+			if (name && name[0] != '\0')
+			{
+				const auto handle = LoadLibraryA(name);
+				if (handle == NULL)
+				{
+					return std::string("failed to load ") + name;
+				}
+				else
+				{
+					FreeLibrary(handle);
+				}
+			}
+		}
+
+		return "";
+	}
+
+	void* AllocateFromPool(PluginAllocator& alloc, const char* name, PluginHandle plugin, size_t size)
+	{
+		assert(name != nullptr);
+
+		const auto mem = alloc.Allocate(size);
+		if (mem) {
+			static std::mutex lock;
+			const std::lock_guard<decltype(lock)> l(lock);	// global log isn't thread-safe
+			_DMESSAGE("plugin %u allocated %u bytes from %s pool", plugin, size, name);
+		}
+
+		return mem;
+	}
+
+	void* AllocateFromBranchPool(PluginHandle plugin, size_t size)
+	{
+		return AllocateFromPool(g_branchPluginAllocator, "branch", plugin, size);
+	}
+
+	void* AllocateFromLocalPool(PluginHandle plugin, size_t size)
+	{
+		return AllocateFromPool(g_localPluginAllocator, "local", plugin, size);
+	}
+}
 
 PluginManager	g_pluginManager;
+PluginAllocator	g_branchPluginAllocator;
+PluginAllocator	g_localPluginAllocator;
 
 PluginManager::LoadedPlugin *	PluginManager::s_currentLoadingPlugin = NULL;
 PluginHandle					PluginManager::s_currentPluginHandle = 0;
+bool							PluginManager::s_hideTrampolineInterface = false;
 
 static const F4SEInterface g_F4SEInterface =
 {
@@ -25,7 +148,8 @@ static const F4SEInterface g_F4SEInterface =
 
 	PluginManager::QueryInterface,
 	PluginManager::GetPluginHandle,
-	PluginManager::GetReleaseIndex
+	PluginManager::GetReleaseIndex,
+	PluginManager::GetPluginInfo
 };
 
 static const F4SEMessagingInterface g_F4SEMessagingInterface =
@@ -94,6 +218,13 @@ static const F4SEObjectInterface g_F4SEObjectInterface =
 	F4SEDelayFunctorManagerInstance,
 	F4SEObjectRegistryInstance,
 	F4SEObjectStorageInstance
+};
+
+static const F4SETrampolineInterface g_F4SETrampolineInterface =
+{
+	F4SETrampolineInterface::kInterfaceVersion,
+	AllocateFromBranchPool,
+	AllocateFromLocalPool
 };
 
 PluginManager::PluginManager()
@@ -193,6 +324,12 @@ void * PluginManager::QueryInterface(UInt32 id)
 	case kInterface_Object:
 		result = (void *)&g_F4SEObjectInterface;
 		break;
+	case kInterface_Trampoline:
+		if(s_hideTrampolineInterface)
+			_WARNING("hiding trampoline interface from buggy plugin");
+		else
+			result = (void *)&g_F4SETrampolineInterface;
+		break;
 	default:
 		_WARNING("unknown QueryInterface %08X", id);
 		break;
@@ -214,6 +351,12 @@ PluginHandle PluginManager::GetPluginHandle(void)
 UInt32 PluginManager::GetReleaseIndex( void )
 {
 	return F4SE_VERSION_RELEASEIDX;
+}
+
+
+const PluginInfo* PluginManager::GetPluginInfo(const char* name)
+{
+	return g_pluginManager.GetInfoByName(name);
 }
 
 bool PluginManager::FindPluginDirectory(void)
@@ -248,8 +391,9 @@ void PluginManager::InstallPlugins(void)
 
 		s_currentLoadingPlugin = &plugin;
 		s_currentPluginHandle = m_plugins.size() + 1;	// +1 because 0 is reserved for internal use
+		s_hideTrampolineInterface = false;
 
-		plugin.handle = (HMODULE)LoadLibrary(pluginPath.c_str());
+		plugin.handle = LoadLibraryA(pluginPath.c_str());
 		if(plugin.handle)
 		{
 			bool		success = false;
@@ -310,7 +454,23 @@ void PluginManager::InstallPlugins(void)
 		}
 		else
 		{
-			_ERROR("couldn't load plugin %s (Error %d)", pluginPath.c_str(), GetLastError());
+			std::string post;
+			const auto err = GetLastError();
+			switch (err) {
+			case ERROR_MOD_NOT_FOUND:
+				post = CheckModNotFound(pluginPath.c_str());
+				break;
+			}
+
+			if (!post.empty())
+			{
+				post = ": " + post;
+			}
+
+			_ERROR("couldn't load plugin %s (Error %d%s)",
+				   pluginPath.c_str(),
+				   err,
+				   post.c_str());
 		}
 	}
 
@@ -362,8 +522,9 @@ const char * PluginManager::SafeCallLoadPlugin(LoadedPlugin * plugin, const F4SE
 
 enum
 {
-	kCompat_BlockFromRuntime =	1 << 0,
-	kCompat_BlockFromEditor =	1 << 1,
+	kCompat_BlockFromRuntime =			1 << 0,
+	kCompat_BlockFromEditor =			1 << 1,
+	kCompat_HideTrampolineInterface =	1 << 2,
 };
 
 struct MinVersionEntry
@@ -376,6 +537,7 @@ struct MinVersionEntry
 
 static const MinVersionEntry	kMinVersionList[] =
 {
+	{	"High FPS Physics Fix", 0x0000000F, "overallocates its trampoline request and crashes", kCompat_HideTrampolineInterface },
 	{	NULL, 0, NULL }
 };
 
@@ -410,6 +572,12 @@ const char * PluginManager::CheckPluginCompatibility(LoadedPlugin * plugin)
 						return iter->reason;
 					}
 #endif
+
+					if(iter->compatFlags & kCompat_HideTrampolineInterface)
+					{
+						// don't block from loading, just hide the interface
+						s_hideTrampolineInterface = true;
+					}
 				}
 
 				break;

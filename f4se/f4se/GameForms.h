@@ -1732,8 +1732,8 @@ public:
 
 	struct Component
 	{
-		BGSComponent	* component;	// 00
-		UInt32			count;			// 08
+		TESForm	* component;	// 00
+		UInt32	count;			// 08
 	};
 
 	tArray<Component>	* components;		// 50
