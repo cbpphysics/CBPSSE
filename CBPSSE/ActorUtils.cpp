@@ -106,7 +106,7 @@ const actorUtils::EquippedArmor actorUtils::GetActorEquippedArmor(Actor* actor, 
         logger.Error("Actor is not valid");
         return actorUtils::EquippedArmor{ nullptr, nullptr };
     }
-    if (!actor->equipData && !actor->equipData->slots) {
+    if (!actor->equipData || !actor->equipData->slots) {
         logger.Error("Actor has no equipData");
         return actorUtils::EquippedArmor{ nullptr, nullptr };
     }
