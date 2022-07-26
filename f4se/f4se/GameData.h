@@ -308,30 +308,6 @@ public:
 extern RelocPtr <DataHandler*> g_dataHandler;
 extern RelocPtr <bool> g_isGameDataReady;
 
-// 30
-class LocationData
-{
-public:
-	LocationData(Actor * actor)
-	{
-		CALL_MEMBER_FN(this, ctor)(actor);
-	}
-	~LocationData() { };
-
-	float			unk00;			// 00
-	float			unk04;			// 04
-	float			unk08;			// 08
-	float			unk0C;			// 0C
-	float			unk10;			// 10
-	float			unk14;			// 14
-	void			* unk18;		// 18
-	TESObjectCELL	* cell;			// 20
-	TESWorldSpace	* worldspace;	// 28
-
-	MEMBER_FN_PREFIX(LocationData);
-	DEFINE_MEMBER_FN(ctor, LocationData*, 0x001F8830, Actor * refr);
-};
-
 struct DefaultObjectEntry
 {
 	BSFixedString		editorId;

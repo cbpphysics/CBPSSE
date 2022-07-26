@@ -77,7 +77,7 @@ IMenu * UI::GetMenuByMovie(GFxMovieView * movie)
 
 bool UI::UnregisterMenu(BSFixedString & name, bool force)
 {
-	BSReadAndWriteLocker locker(g_menuTableLock);
+	BSWriteLocker locker(g_menuTableLock);
 	MenuTableItem * item = menuTable.Find(&name);
 	if (!item || (item->menuInstance && !force)) {
 		return false;
@@ -86,25 +86,18 @@ bool UI::UnregisterMenu(BSFixedString & name, bool force)
 	return menuTable.Remove(&name);
 }
 
-HUDComponentBase::HUDComponentBase(GFxValue * parent, const char * componentName, HUDContextArray<BSFixedString> * contextList)
+HUDComponentBase::HUDComponentBase(GFxValue * parent, const char * componentName, const HUDModeInitParams* initParams)
 {
-	Impl_ctor(parent, componentName, contextList);
+	Impl_ctor(parent, componentName, initParams);
 }
 
 HUDComponentBase::~HUDComponentBase()
 {
-	for(UInt32 i = 0; i < contexts.count; i++)
-	{
-		contexts.entries[i].Release();
-	}
-
-	Heap_Free(contexts.entries);
-	contexts.count = 0;
 }
 
 void HUDComponentBase::UpdateVisibilityContext(void * unk1)
 {
-	HasHUDContext(&contexts, unk1);
+	HasHUDContext(&hudModes, unk1);
 	bool bVisible = IsVisible();
 	double alpha = 0.0;
 	if(bVisible) {
@@ -116,12 +109,12 @@ void HUDComponentBase::UpdateVisibilityContext(void * unk1)
 	SetExtDisplayInfoAlpha(unk2, alpha);
 	SetExtDisplayInfo(&dInfo);
 
-	unkEC = bVisible == false;
+	fadeState = bVisible == false;
 }
 
 void HUDComponentBase::ColorizeComponent()
 {
-	SetFilterColor(isWarning);
+	SetFilterColor(bDisplayWarningColor);
 }
 
 GameMenuBase::GameMenuBase() : IMenu()
@@ -132,4 +125,26 @@ GameMenuBase::GameMenuBase() : IMenu()
 GameMenuBase::~GameMenuBase()
 {
 	Impl_dtor();
+}
+
+bool GameMenuBase::ShouldHandleEvent(InputEvent* inputEvent)
+{
+	if (inputEvent->handled != 2 && inputEvent->eventType == InputEvent::kEventType_Button)
+	{
+		ButtonEvent* buttonEvent = static_cast<ButtonEvent*>(inputEvent);
+
+		if (buttonEvent->isDown == 0.0f)
+		{
+			if (buttonEvent->timer >= 0.0f)
+			{
+				return true;
+			}
+		}
+		else if (buttonEvent->timer == 0.0f)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

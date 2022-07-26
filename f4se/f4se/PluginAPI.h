@@ -8,6 +8,7 @@ class ITaskDelegate;
 class F4SEDelayFunctorManager;
 class F4SEObjectRegistry;
 class F4SEPersistentObjectStorage;
+struct PluginInfo;
 
 enum
 {
@@ -23,6 +24,7 @@ enum
 	kInterface_Serialization,
 	kInterface_Task,
 	kInterface_Object,
+	kInterface_Trampoline,
 	kInterface_Max,
 };
 
@@ -40,6 +42,10 @@ struct F4SEInterface
 	
 	// returns the F4SE build's release index
 	UInt32			(* GetReleaseIndex)(void);
+
+	// Minimum F4SE version 0.6.22
+	// returns the plugin info structure for a plugin by name, only valid to be called after PostLoad message
+	const PluginInfo*	(*GetPluginInfo)(const char* name);
 };
 
 
@@ -210,6 +216,19 @@ struct F4SEObjectInterface
 	F4SEDelayFunctorManager & (* GetDelayFunctorManager)();
 	F4SEObjectRegistry & (* GetObjectRegistry)();
 	F4SEPersistentObjectStorage & (* GetPersistentObjectStorage)();
+};
+
+struct F4SETrampolineInterface
+{
+	enum
+	{
+		kInterfaceVersion = 1
+	};
+
+	UInt32	interfaceVersion;
+
+	void* (*AllocateFromBranchPool)(PluginHandle plugin, size_t size);
+	void* (*AllocateFromLocalPool)(PluginHandle plugin, size_t size);
 };
 
 struct PluginInfo

@@ -314,13 +314,6 @@ public:
 	float	unk2C;		// 2C
 };
 
-// 58
-class ExtraWorkshopData
-{
-public:
-	UInt64	unk18[(0x58 - 0x18) >> 3];
-};
-
 // 20
 class ExtraMaterialSwap : public BSExtraData
 {

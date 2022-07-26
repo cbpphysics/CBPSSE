@@ -37,7 +37,7 @@ public:
 	UInt64		eventType;		// 10
 	InputEvent	* next;			// 18
 	UInt32		unk20;			// 20
-	UInt32		unk24;			// 24 - When this != 2 it means stop processing
+	UInt32		handled;		// 24 - When this != 2 it means stop processing
 };
 STATIC_ASSERT(sizeof(InputEvent) == 0x28);
 
@@ -231,7 +231,7 @@ public:
 	BSInputEventUser(bool bEnabled) : enabled(bEnabled) { }
 	virtual ~BSInputEventUser() { };
 
-	virtual bool IsEnabled(InputEvent * inputEvent = nullptr) { return enabled; };
+	virtual bool ShouldHandleEvent(InputEvent * inputEvent = nullptr) { return enabled; };
 	virtual void OnKinectEvent(KinectEvent * inputEvent) { };
 	virtual void OnDeviceConnectEvent(DeviceConnectEvent * inputEvent) { };
 	virtual void OnThumbstickEvent(ThumbstickEvent * inputEvent) { };

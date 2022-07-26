@@ -8,17 +8,19 @@
 
 class BSGeometryData;
 
-// ??
-class BSRenderManager
+namespace BSGraphics
+{
+class Renderer
 {
 public:
 	UInt64				unk2588[0x2590 >> 3];	// 2588
-	CRITICAL_SECTION	m_textureLock;			// 2590
+	CRITICAL_SECTION	m_renderLock;			// 2590
 
-	MEMBER_FN_PREFIX(BSRenderManager);
+	MEMBER_FN_PREFIX(Renderer);
 	DEFINE_MEMBER_FN(CreateBSGeometryData, BSGeometryData*, 0x01D0BD60, UInt32 * blockSize, UInt8 * vertexData, UInt64 vertexDesc, BSGeometryData::TriangleData * triData); // Creates a block with a vertex copy in the resource pool with a reference to the supplied triblock (partial deep copy)
 };
-STATIC_ASSERT(offsetof(BSRenderManager, m_textureLock) == 0x2590);
+STATIC_ASSERT(offsetof(Renderer, m_renderLock) == 0x2590);
+}
 
 class BSShaderResourceManager
 {
@@ -65,7 +67,7 @@ public:
 };
 
 // 1B8
-class BSRenderer
+class ImageSpaceManager
 {
 public:
 
@@ -74,9 +76,9 @@ public:
 struct ID3D11DeviceContext;
 struct ID3D11Device;
 
-extern RelocPtr <BSRenderer*>			g_renderer;
-extern RelocPtr <BSRenderManager>		g_renderManager;
-extern RelocPtr <BSRenderTargetManager> g_renderTargetManager;
-extern RelocPtr <BSShaderResourceManager> g_shaderResourceManager;
-extern RelocPtr <ID3D11Device*>			g_D3D11Device;
-extern RelocPtr <ID3D11DeviceContext*>  g_D3D11DeviceContext;
+extern RelocPtr <ImageSpaceManager>			g_imageSpaceManager;
+extern RelocPtr <BSGraphics::Renderer>		g_renderManager;
+extern RelocPtr <BSRenderTargetManager>		g_renderTargetManager;
+extern RelocPtr <BSShaderResourceManager>	g_shaderResourceManager;
+extern RelocPtr <ID3D11Device>				g_D3D11Device;
+extern RelocPtr <ID3D11DeviceContext>		g_D3D11DeviceContext;

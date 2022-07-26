@@ -3,26 +3,29 @@
 #include "f4se/GameAPI.h"
 
 // 8
-template <class T>
+template <typename T>
 class NiPointer
 {
 public:
 	T	* m_pObject;	// 00
 
-	inline NiPointer(T* pObject = (T*) 0)
+	inline NiPointer(const NiPointer& rhs) :
+		m_pObject(rhs.m_pObject)
+	{
+		if (m_pObject) {
+			m_pObject->IncRef();
+		}
+	}
+
+	inline NiPointer(T* pObject = (T*)0)
 	{
 		m_pObject = pObject;
-		if(m_pObject) m_pObject->IncRef();
+		if (m_pObject) m_pObject->IncRef();
 	}
 
 	inline ~NiPointer()
 	{
-		if(m_pObject) m_pObject->DecRef();
-	}
-
-	inline operator bool() const
-	{
-		return m_pObject != nullptr;
+		if (m_pObject) m_pObject->DecRef();
 	}
 
 	inline operator T *() const
@@ -42,10 +45,10 @@ public:
 
 	inline NiPointer <T> & operator=(const NiPointer & rhs)
 	{
-		if(m_pObject != rhs.m_pObject)
+		if (m_pObject != rhs.m_pObject)
 		{
-			if(rhs) rhs.m_pObject->IncRef();
-			if(m_pObject) m_pObject->DecRef();
+			if (rhs) rhs.m_pObject->IncRef();
+			if (m_pObject) m_pObject->DecRef();
 
 			m_pObject = rhs.m_pObject;
 		}
@@ -55,10 +58,10 @@ public:
 
 	inline NiPointer <T> & operator=(T * rhs)
 	{
-		if(m_pObject != rhs)
+		if (m_pObject != rhs)
 		{
-			if(rhs) rhs->IncRef();
-			if(m_pObject) m_pObject->DecRef();
+			if (rhs) rhs->IncRef();
+			if (m_pObject) m_pObject->DecRef();
 
 			m_pObject = rhs;
 		}
@@ -84,6 +87,11 @@ public:
 	inline bool operator!=(const NiPointer & ptr) const
 	{
 		return m_pObject != ptr.m_pObject;
+	}
+
+	inline T* get()
+	{
+		return m_pObject;
 	}
 };
 
@@ -134,6 +142,8 @@ public:
 class NiColor
 {
 public:
+	NiColor() : r(0), g(0), b(0) { }
+
 	float	r;	// 00
 	float	g;	// 04
 	float	b;	// 08
@@ -143,6 +153,8 @@ public:
 class NiColorA
 {
 public:
+	NiColorA() : r(0), g(0), b(0), a(0) { }
+
 	float	r;	// 00
 	float	g;	// 04
 	float	b;	// 08

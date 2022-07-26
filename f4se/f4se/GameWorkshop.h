@@ -1,40 +1,117 @@
 #pragma once
 
 #include "f4se/GameTypes.h"
+#include "f4se/GameExtraData.h"
+#include "f4se/GameHandle.h"
+#include "f4se/NiTypes.h"
 
 class TESObjectREFR;
-class LocationData;
 class BSExtraData;
 class NiPoint3;
 class bhkWorld;
+class Actor;
+class TESObjectCELL;
+class TESWorldSpace;
+class TESBoundObject;
 
-typedef void(*_LinkPower)(BSExtraData* workshopExtraData, TESObjectREFR* akRef1, TESObjectREFR* akRef2, TESObjectREFR* akWireRef); // Wire optional
-extern RelocAddr <_LinkPower> LinkPower_Internal;
+namespace PowerUtils
+{
+// 08
+struct GridConnection
+{
+	UInt32 connection;
+	UInt32 connector;
+};
 
-typedef void(*_LinkPower2)(TESObjectREFR* akRef, BSExtraData* workshopExtraData);
-extern RelocAddr <_LinkPower2> LinkPower2_Internal;
+// 10
+struct GridSaveLoadData
+{
+	UInt32 node;
+	GridConnection connection;
+};
 
-// Wire related calls
-typedef void(*_LinkPower3)(BSExtraData* workshopExtraData, TESObjectREFR* akWireRef);
-extern RelocAddr <_LinkPower3> LinkPower3_Internal;
+class PowerGrid
+{
+public:
+	BSTHashMap<UInt32,BSTSet<GridConnection>*>	adjacencyMap;
+	BSTArray<PowerUtils::GridSaveLoadData>		loadGameData;
+	UInt32										loadElement;
+	BSTArray<UInt32>							currentlyPowered;
+	float										capacity;
+	float										load;
+};
 
-typedef void(*_LinkPower4)(TESObjectREFR* akWireRef);
-extern RelocAddr <_LinkPower4> LinkPower4_Internal;
+typedef void(*_UpdateMovingWirelessItem)(TESObjectREFR* akRef, BSExtraData* workshopExtraData);
+extern RelocAddr <_UpdateMovingWirelessItem> UpdateMovingWirelessItem;
 
-typedef void(*_SetWireEndpoints)(TESObjectREFR* akRef1, SInt32 unk2, TESObjectREFR* akRef2, SInt32 unk4, TESObjectREFR* akWireRef);	// unk2 and unk4 always 0 - Adds the ExtraData
-extern RelocAddr <_SetWireEndpoints> SetWireEndpoints_Internal;
+}
 
-typedef void(*_FinalizeWireLink)(LocationData* locationData, TESObjectREFR* akWireRef, TESObjectREFR* akRef1, int unk4, TESObjectREFR* akRef2, int unk6);	// unk4 and unk6 always 0
-extern RelocAddr <_FinalizeWireLink> FinalizeWireLink;
+namespace Workshop
+{
+// 30
+class ContextData
+{
+public:
+	ContextData(Actor * actor)
+	{
+		ctor(actor);
+	}
+	~ContextData() { };
+
+	NiPoint3		lookPos;
+	NiPoint3		lookDir;
+	float			zAngle;
+	TESObjectCELL	* cell;			// 20
+	TESWorldSpace	* worldspace;	// 28
+
+	DEFINE_MEMBER_FN_1(ctor, ContextData*, 0x001F8830, Actor * refr);
+};
+
+// 08
+struct DeletedItemInfo
+{
+	UInt32 formID;
+	UInt32 count;
+};
+
+// 58
+class ExtraData : public BSExtraData
+{
+public:
+	PowerUtils::PowerGrid*					currentPowerGrid;
+	BSTArray<PowerUtils::PowerGrid*>		powerGrid;
+	BSTArray<Workshop::DeletedItemInfo*>	deletedItem;
+	SInt32									powerRating;
+	bool									offGridItems;
+
+	DEFINE_MEMBER_FN_1(AddItem, void, 0x001F6890, TESObjectREFR* akRef);
+	DEFINE_MEMBER_FN_3(AddConnection, void, 0x001F6E20, TESObjectREFR* akRef1, TESObjectREFR* akRef2, TESObjectREFR* akWireRef);
+};
+
+extern RelocPtr<BSPointerHandle<TESObjectREFR>> hCurrentWorkshop;
+
+typedef TESObjectREFR*(*_FindNearestValidWorkshop)(TESObjectREFR* akRef);
+extern RelocAddr <_FindNearestValidWorkshop> FindNearestValidWorkshop;
+
+typedef void(*_ScrapReference)(Workshop::ContextData* contextData, NiPointer<TESObjectREFR>* akRef, BSTArray<BSTTuple<TESBoundObject*, UInt32>>* materials);
+extern RelocAddr <_ScrapReference> ScrapReference;
+}
+
+namespace SplineUtils
+{
+typedef void(*_ConnectSpline)(TESObjectREFR* akEndpoint1, SInt32 linkType1, TESObjectREFR* akEndpoint2, SInt32 linkType2, TESObjectREFR* akWireRef);	// unk2 and unk4 always 0 - Adds the ExtraData
+extern RelocAddr <_ConnectSpline> ConnectSpline;
+
+typedef void(*_UpdateSpline)(Workshop::ContextData* contextData, TESObjectREFR* akWireRef, TESObjectREFR* akEndpoint1, int linkType1, TESObjectREFR* akEndpoint2, int linkType2);
+extern RelocAddr <_UpdateSpline> UpdateSpline;
+}
+
+namespace TerminalUtils
+{
+typedef void(*_EstablishTerminalLinks)(TESObjectREFR* akWireRef);
+extern RelocAddr <_EstablishTerminalLinks> EstablishTerminalLinks;
+}
 
 typedef TESObjectREFR * (*_GetObjectAtConnectPoint)(TESObjectREFR * source, NiPoint3 * connectPos, bhkWorld * world, float unk1);
 extern RelocAddr <_GetObjectAtConnectPoint> GetObjectAtConnectPoint;
 
-struct MaterialsReturned
-{
-	TESForm	* form;
-	UInt32	amount;
-};
-
-typedef void(*_ScrapReference)(LocationData* locationData, TESObjectREFR** akRef, tArray<MaterialsReturned> * materials);
-extern RelocAddr <_ScrapReference> ScrapReference;

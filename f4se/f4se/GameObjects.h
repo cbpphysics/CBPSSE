@@ -20,6 +20,7 @@ class SpellItem;
 class TESObjectMISC;
 class BGSDamageType;
 class VirtualMachine;
+class BGSCollisionLayer;
 
 typedef TESObjectREFR* (* _PlaceAtMe_Native)(VirtualMachine* vm, UInt32 stackId, TESObjectREFR** target, TESForm* form, SInt32 count, bool bForcePersist, bool bInitiallyDisabled, bool bDeleteWhenAble);
 extern RelocAddr<_PlaceAtMe_Native> PlaceAtMe_Native;
@@ -778,8 +779,40 @@ public:
 	BGSPreloadable				preloadable;		// A8
 	BGSDestructibleObjectForm	destructible;		// B0
 
-	UInt64 unkC0[(0x188 - 0xC0) >> 3];
+	struct BGSProjectileData
+	{
+		UInt32					flags;					// 00
+		float					gravity;				// 04
+		float					speed;					// 08
+		float					range;					// 0C
+		TESObjectLIGH*			light;					// 10
+		TESObjectLIGH*			muzzleFlashLight;		// 18
+		float					explosionProximity;		// 20
+		float					explosionTimer;			// 24
+		BGSExplosion*			explosionType;			// 28
+		BGSSoundDescriptorForm*	activeSoundLoop;		// 30
+		float					muzzleFlashDuration;	// 38
+		float					fadeOutTime;			// 3C
+		float					force;					// 40
+		BGSSoundDescriptorForm*	countdownSound;			// 48
+		BGSSoundDescriptorForm*	deactivateSound;		// 50
+		TESObjectWEAP*			defaultWeaponSource;	// 58
+		float					coneSpread;				// 60
+		float					collisionRadius;		// 64
+		float					lifetime;				// 68
+		float					relaunchInterval;		// 6C
+		BGSTextureSet*			decalData;				// 70
+		BGSCollisionLayer*		collisionLayer;			// 78
+		BGSProjectile*			VATSProjectile;			// 80
+		SInt8					tracerFrequency;		// 88
+	};
+
+	BGSProjectileData			projectileData;			// C0
+	TESModel					muzzleFlashModel;		// 150
+	UInt32						soundLevel;				// 180
 };
+STATIC_ASSERT(sizeof(BGSProjectile) == 0x188);
+STATIC_ASSERT(sizeof(BGSProjectile::BGSProjectileData) == 0x90);
 
 // D8
 class TESLevCharacter : public TESBoundAnimObject
