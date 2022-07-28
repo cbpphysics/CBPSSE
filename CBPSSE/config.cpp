@@ -27,7 +27,6 @@ bool npcOnly = false;
 bool useWhitelist = false;
 
 config_t config;
-config_t configArmor;
 std::map<UInt32, armorOverrideData> configArmorOverrideMap;
 std::unordered_set<UInt32> usedSlots;
 std::map<std::multiset<UInt64>, config_t> cachedConfigs;
