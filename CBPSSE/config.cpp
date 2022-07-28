@@ -132,32 +132,32 @@ bool LoadConfig() {
 
     // Read sections
     auto sections = configReader.Sections();
+    auto prioritySection = sections.find("Priority");
+    bool detectArmorCompat = configReader.GetBoolean("General", "detectArmor", false) && (prioritySection == sections.end() || configReader.Section(*prioritySection).empty());
 
     // Backwards compatibility for detectArmor style method
-    {
-        auto prioritySection = sections.find("Priority");
-        if (configReader.GetBoolean("General", "detectArmor", false) && (prioritySection == sections.end() || configReader.Section(*prioritySection).empty())) {
-            priorityNameMappings["A"] = 0;
-            configArmorOverrideMap[0].slots.emplace(11);
-            configArmorOverrideMap[0].isWhitelist = false;
+    if (detectArmorCompat) {
+        priorityNameMappings["A"] = 0;
+        configArmorOverrideMap[0].slots.emplace(11);
+        usedSlots.emplace(11);
+        configArmorOverrideMap[0].isWhitelist = false;
 
-            //Read armorIgnore
-            auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
-            {
-                size_t commaPos;
-                do {
-                    commaPos = armorIgnoreStr.find_first_of(",");
-                    auto token = armorIgnoreStr.substr(0, commaPos);
-                    UInt32 formID;
-                    std::stringstream ss;
-                    ss << std::hex << token;
-                    ss >> formID;
-                    configArmorOverrideMap[0].armors.emplace(formID);
-                    armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
+        //Read armorIgnore
+        auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
+        {
+            size_t commaPos;
+            do {
+                commaPos = armorIgnoreStr.find_first_of(",");
+                auto token = armorIgnoreStr.substr(0, commaPos);
+                UInt32 formID;
+                std::stringstream ss;
+                ss << std::hex << token;
+                ss >> formID;
+                configArmorOverrideMap[0].armors.emplace(formID);
+                armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
 
-                    //logger.Info("<token:> %s, <rest:> %s, <commaPos:> %d, <colonPos:> %d\n", token.c_str(), whitelistName.c_str(), commaPos >= 0, colonPos < 0);
-                } while (commaPos != -1);
-            }
+                //logger.Info("<token:> %s, <rest:> %s, <commaPos:> %d, <colonPos:> %d\n", token.c_str(), whitelistName.c_str(), commaPos >= 0, colonPos < 0);
+            } while (commaPos != -1);
         }
     }
 
@@ -395,6 +395,15 @@ bool LoadConfig() {
     // Remove duplicate entries
     bonesSet = std::set<std::string>(boneNames.begin(), boneNames.end());
     boneNames.assign(bonesSet.begin(), bonesSet.end());
+
+    // "Delete" bones specified in [Attach] but not [Attach.A] for compatibility with presets that remove breast bone jiggle when chest armor equipped
+    if (detectArmorCompat) {
+        for (auto boneName : boneNames) {
+            if (configArmorOverrideMap[0].config.find(boneName) == configArmorOverrideMap[0].config.end()) {
+                configArmorOverrideMap[0].config[boneName];
+            }
+        }
+    }
 
     logger.Error("Finished CBP Config\n");
     return reloadActors;
