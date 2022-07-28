@@ -49,57 +49,6 @@ bool actorUtils::IsActorInPowerArmor(Actor* actor) {
     return isInPowerArmor;
 }
 
-// May want to change this for any armor
-bool actorUtils::IsActorTorsoArmorEquipped(Actor* actor) {
-    bool isEquipped = false;
-    bool isArmorIgnored = false;
-
-    if (!IsActorValid(actor)) {
-        logger.Info("Actor is not valid\n");
-        return false;
-    }
-    if (!actor->equipData && !actor->equipData->slots) {
-        logger.Info("Actor has no equipData\n");
-        return false;
-    }
-
-    // 11 IS ARMOR TORSO SLOT (41 minus 30??)
-    isEquipped = actor->equipData->slots[11].item;
-
-    // Check if armor is ignored
-    if (isEquipped) {
-        if (!actor->equipData->slots[11].item) {
-            logger.Info("slot 11 item check failed.\n");
-            // redundant check but just in case
-            return false;
-        }
-        UInt32 bodyFormID;
-        if (!actor->equipData->slots[3].item) {
-            logger.Info("slot 3 item check failed.\n");
-            bodyFormID = 0;
-        }
-        else {
-            bodyFormID = actor->equipData->slots[3].item->formID;;
-        }
-        auto torsoFormID = actor->equipData->slots[11].item->formID;
-
-        //logger.Info("torsoFormID: 0x%08x\n", torsoFormID);
-        //logger.Info("bodyFormID: 0x%08x\n", bodyFormID);
-
-        auto torsoIdIter = armorIgnore.find(torsoFormID);
-
-        if (torsoIdIter != armorIgnore.end())
-            isArmorIgnored = true;
-        else if ((torsoFormID == bodyFormID - 1)) {
-            auto bodyIdIter = armorIgnore.find(bodyFormID);
-            if (bodyIdIter != armorIgnore.end())
-                isArmorIgnored = true;
-        }
-    }
-
-    return isEquipped && !isArmorIgnored;
-}
-
 bool actorUtils::IsActorTrackable(Actor* actor) {
     if (!IsActorValid(actor)) {
         logger.Info("IsActorTrackable: actor is not valid.\n");
@@ -147,4 +96,87 @@ bool actorUtils::IsBoneInWhitelist(Actor* actor, std::string boneName) {
         }
     }
     return false;
+}
+
+const actorUtils::EquippedArmor actorUtils::GetActorEquippedArmor(Actor* actor, UInt32 slot) {
+    bool isEquipped = false;
+    bool isArmorIgnored = false;
+
+    if (!actorUtils::IsActorValid(actor)) {
+        logger.Error("Actor is not valid");
+        return actorUtils::EquippedArmor{ nullptr, nullptr };
+    }
+    if (!actor->equipData || !actor->equipData->slots) {
+        logger.Error("Actor has no equipData");
+        return actorUtils::EquippedArmor{ nullptr, nullptr };
+    }
+
+    isEquipped = actor->equipData->slots[slot].item;
+
+    // Check if armor is ignored
+    if (isEquipped) {
+        if (!actor->equipData->slots[slot].item) {
+            logger.Error("slot %d item check failed.", slot);
+            // redundant check but just in case
+            return actorUtils::EquippedArmor{ nullptr, nullptr };
+        }
+        return actorUtils::EquippedArmor{ actor->equipData->slots[slot].item, actor->equipData->slots[slot].model };
+    }
+
+    return actorUtils::EquippedArmor{ nullptr, nullptr };
+}
+
+config_t actorUtils::BuildConfigForActor(Actor* actor) {
+    config_t baseConfig = config;
+
+    for (auto overrideConfigIter = configArmorOverrideMap.rbegin(); overrideConfigIter != configArmorOverrideMap.rend(); ++overrideConfigIter) {
+        auto data = overrideConfigIter->second;
+
+        std::vector<actorUtils::EquippedArmor> equippedList;
+        for (auto slot : data.slots) {
+            auto equipped = actorUtils::GetActorEquippedArmor(actor, slot);
+            if (equipped.armor && equipped.model) {
+                equippedList.push_back(equipped);
+            }
+        }
+
+        auto armorFormID = data.armors.begin();
+        for (; armorFormID != data.armors.end(); ++armorFormID) {
+            bool breakOutside = false;
+            for (auto equipped : equippedList) {
+                if (*armorFormID == equipped.armor->formID || *armorFormID == equipped.model->formID) {
+                    if (data.isWhitelist) {
+                        for (auto val : data.config) {
+                            if (data.config[val.first].empty()) {
+                                baseConfig.erase(val.first);
+                            }
+                            else {
+                                baseConfig[val.first] = val.second;
+                            }
+                        }
+                    }
+
+                    breakOutside = true;
+                    break;
+                }
+            }
+
+            if (breakOutside) {
+                break;
+            }
+        }
+
+        if (!data.isWhitelist && armorFormID == data.armors.end()) {
+            for (auto val : data.config) {
+                if (data.config[val.first].empty()) {
+                    baseConfig.erase(val.first);
+                }
+                else {
+                    baseConfig[val.first] = val.second;
+                }
+            }
+        }
+    }
+
+    return baseConfig;
 }
