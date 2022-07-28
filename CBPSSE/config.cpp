@@ -149,14 +149,14 @@ bool LoadConfig() {
             do {
                 commaPos = armorIgnoreStr.find_first_of(",");
                 auto token = armorIgnoreStr.substr(0, commaPos);
-                UInt32 formID;
-                std::stringstream ss;
-                ss << std::hex << token;
-                ss >> formID;
-                configArmorOverrideMap[0].armors.emplace(formID);
-                armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
 
-                //logger.Info("<token:> %s, <rest:> %s, <commaPos:> %d, <colonPos:> %d\n", token.c_str(), whitelistName.c_str(), commaPos >= 0, colonPos < 0);
+                try {
+                    UInt32 formID = std::stoul(token);
+                    configArmorOverrideMap[0].armors.emplace(formID);
+                }
+                catch (const std::exception&) {}
+
+                armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
             } while (commaPos != -1);
         }
     }
