@@ -166,7 +166,7 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
             }
         }
 
-        if (!data.isWhitelist && armorFormID == data.armors.end()) {
+        if (!data.isWhitelist && armorFormID == data.armors.end() && !equippedList.empty()) {
             for (auto val : data.config) {
                 if (data.config[val.first].empty()) {
                     baseConfig.erase(val.first);
