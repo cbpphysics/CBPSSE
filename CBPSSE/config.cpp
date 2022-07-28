@@ -29,6 +29,8 @@ bool useWhitelist = false;
 config_t config;
 config_t configArmor;
 std::map<UInt32, armorOverrideData> configArmorOverrideMap;
+std::unordered_set<UInt32> usedSlots;
+std::map<std::multiset<UInt64>, config_t> cachedConfigs;
 
 // TODO data structure these
 whitelist_t whitelist;
@@ -100,6 +102,8 @@ bool LoadConfig() {
     boneNames.clear();
     config.clear();
     configArmorOverrideMap.clear();
+    usedSlots.clear();
+    cachedConfigs.clear();
 
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
@@ -272,6 +276,7 @@ bool LoadConfig() {
                 }
 
                 configArmorOverrideMap[armorPriority].slots.emplace(slot - 30);
+                usedSlots.emplace(slot - 30);
             } while (commaPos != std::string::npos);
 
             configArmorOverrideMap[armorPriority].isWhitelist = configReader.GetBoolean(*sectionsIter, "whitelist", false);
@@ -396,7 +401,7 @@ bool LoadConfig() {
     bonesSet = std::set<std::string>(boneNames.begin(), boneNames.end());
     boneNames.assign(bonesSet.begin(), bonesSet.end());
 
-    // "Delete" bones specified in [Attach] but not [Attach.A] for compatibility with presets that remove breast bone jiggle when chest armor equipped
+    // "Delete" bones specified in [Attach] but not [Attach.A] from the latter for compatibility with presets that remove breast bone jiggle when chest armor equipped
     if (detectArmorCompat) {
         for (auto boneName : boneNames) {
             if (configArmorOverrideMap[0].config.find(boneName) == configArmorOverrideMap[0].config.end()) {

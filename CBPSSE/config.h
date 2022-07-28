@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <map>
 #include <vector>
 
@@ -36,6 +37,8 @@ extern config_t config;
 extern std::map<UInt32, armorOverrideData> configArmorOverrideMap;
 extern whitelist_t whitelist;
 extern std::vector<std::string> raceWhitelist;
+extern std::unordered_set<UInt32> usedSlots;
+extern std::map<std::multiset<UInt64>, config_t> cachedConfigs;
 
 bool LoadConfig();
 void DumpWhitelistToLog();

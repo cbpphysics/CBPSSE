@@ -127,8 +127,26 @@ const actorUtils::EquippedArmor actorUtils::GetActorEquippedArmor(Actor* actor, 
 }
 
 config_t actorUtils::BuildConfigForActor(Actor* actor) {
-    config_t baseConfig = config;
+    std::multiset<UInt64> key;
+    for (auto slot : usedSlots) {
+        UInt64 data = 0;
+        auto equipped = actorUtils::GetActorEquippedArmor(actor, slot);
+        if (equipped.armor) {
+            data |= equipped.armor->formID;
+            data = data << 32;
+        }
+        if (equipped.model) {
+            data |= equipped.model->formID;
+        }
+        key.emplace(data);
+    }
 
+    auto found = cachedConfigs.find(key);
+    if (found != cachedConfigs.end()) {
+        return found->second;
+    }
+
+    config_t baseConfig = config;
     for (auto overrideConfigIter = configArmorOverrideMap.rbegin(); overrideConfigIter != configArmorOverrideMap.rend(); ++overrideConfigIter) {
         auto data = overrideConfigIter->second;
 
@@ -178,5 +196,6 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
         }
     }
 
+    cachedConfigs[key] = baseConfig;
     return baseConfig;
 }
