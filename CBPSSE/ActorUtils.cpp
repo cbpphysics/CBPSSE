@@ -163,7 +163,7 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
             bool breakOutside = false;
             for (auto equipped : equippedList) {
                 if (*armorFormID == equipped.armor->formID || *armorFormID == equipped.model->formID) {
-                    if (data.isInverted) {
+                    if (data.isFilterInverted) {
                         for (auto val : data.config) {
                             if (data.config[val.first].empty()) {
                                 baseConfig.erase(val.first);
@@ -184,7 +184,7 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
             }
         }
 
-        if (!data.isInverted && armorFormID == data.armors.end() && !equippedList.empty()) {
+        if (!data.isFilterInverted && armorFormID == data.armors.end() && !equippedList.empty()) {
             for (auto val : data.config) {
                 if (data.config[val.first].empty()) {
                     baseConfig.erase(val.first);

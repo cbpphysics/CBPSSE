@@ -143,7 +143,7 @@ bool LoadConfig() {
         priorityNameMappings["A"] = 0;
         configArmorOverrideMap[0].slots.emplace(11);
         usedSlots.emplace(11);
-        configArmorOverrideMap[0].isInverted = false;
+        configArmorOverrideMap[0].isFilterInverted = false;
 
         //Read armorIgnore
         auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
@@ -278,13 +278,13 @@ bool LoadConfig() {
                 usedSlots.emplace(slot - 30);
             } while (commaPos != std::string::npos);
 
-            configArmorOverrideMap[armorPriority].isInverted = configReader.GetBoolean(*sectionsIter, "invert", false);
+            configArmorOverrideMap[armorPriority].isFilterInverted = configReader.GetBoolean(*sectionsIter, "invertFilter", false);
 
             // Get section contents
             auto sectionMap = configReader.Section(*sectionsIter);
             for (auto& valuesIter : sectionMap) {
                 auto& key = valuesIter.first;
-                if (key == "invert" || key == "slots") {
+                if (key == "invertFilter" || key == "slots") {
                     continue;
                 }
 

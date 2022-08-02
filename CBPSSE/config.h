@@ -20,7 +20,7 @@ typedef std::unordered_map<std::string, configEntry_t> config_t;
 typedef std::unordered_map<std::string, std::unordered_map<std::string, whitelistSex>> whitelist_t;
 
 struct armorOverrideData {
-    bool isInverted;
+    bool isFilterInverted;
     std::unordered_set<UInt32> slots;
     std::unordered_set<UInt32> armors;
     config_t config;
