@@ -144,24 +144,6 @@ bool LoadConfig() {
         configArmorOverrideMap[0].slots.emplace(11);
         usedSlots.emplace(11);
         configArmorOverrideMap[0].isFilterInverted = false;
-
-        //Read armorIgnore
-        auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
-        {
-            size_t commaPos;
-            do {
-                commaPos = armorIgnoreStr.find_first_of(",");
-                auto token = armorIgnoreStr.substr(0, commaPos);
-
-                try {
-                    UInt32 formID = std::stoul(token);
-                    configArmorOverrideMap[0].armors.emplace(formID);
-                }
-                catch (const std::exception&) {}
-
-                armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
-            } while (commaPos != -1);
-        }
     }
 
     for (auto sectionsIter = sections.begin(); sectionsIter != sections.end(); ++sectionsIter) {
