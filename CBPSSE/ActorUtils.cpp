@@ -5,7 +5,12 @@
 
 #include "f4se/GameExtraData.h"
 #include "f4se/GameObjects.h"
+#include <f4se/GameReferences.h>
 #include "f4se/GameRTTI.h"
+
+#include <f4se/NiNodes.h>
+#include <f4se/NiObjects.h>
+#include <f4se/NiTypes.h>
 
 std::string actorUtils::GetActorRaceEID(Actor* actor) {
     if (!IsActorValid(actor)) {
@@ -14,6 +19,28 @@ std::string actorUtils::GetActorRaceEID(Actor* actor) {
     }
 
     return std::string(actor->race->editorId.c_str());
+}
+
+NiAVObject* actorUtils::GetBaseSkeleton(Actor* actor) {
+    BSFixedString skeletonNif_name("skeleton.nif");
+
+    if (!actorUtils::IsActorValid(actor)) {
+        logger.Error("%s: No valid actor\n", __func__);
+        return NULL;
+    }
+    auto loadedState = actor->unkF0;
+    if (!loadedState || !loadedState->rootNode) {
+        logger.Error("%s:No loaded state for actor %08x\n", __func__, actor->formID);
+        return NULL;
+    }
+    auto obj = loadedState->rootNode->GetObjectByName(&skeletonNif_name);
+
+    if (!obj) {
+        logger.Error("%s: Couldn't get name for loaded state for actor %08x\n", __func__, actor->formID);
+        return NULL;
+    }
+
+    return obj;
 }
 
 bool actorUtils::IsActorMale(Actor *actor)
@@ -51,7 +78,7 @@ bool actorUtils::IsActorInPowerArmor(Actor* actor) {
 
 bool actorUtils::IsActorTrackable(Actor* actor) {
     if (!IsActorValid(actor)) {
-        logger.Info("IsActorTrackable: actor is not valid.\n");
+        logger.Info("%s: actor %x is not trackable.\n", __func__, actor->formID);
         return false;
     }
 
@@ -65,17 +92,17 @@ bool actorUtils::IsActorTrackable(Actor* actor) {
 
 bool actorUtils::IsActorValid(Actor* actor) {
     if (!actor) {
-        logger.Info("IsActorValid: actor is null\n");
+        logger.Info("%s: actor %x is null\n", __func__, actor->formID);
         return false;
     }
     if (actor->flags & TESForm::kFlag_IsDeleted) {
-        logger.Info("IsActorValid: actor has deleted flag\n");
+        logger.Info("%s: actor %x has deleted flag\n", __func__, actor->formID);
         return false;
     }
     if (actor && actor->unkF0 && actor->unkF0->rootNode) {
         return true;
     }
-    logger.Info("IsActorValid: actor is not valid state\n");
+    logger.Info("%s: actor %x is not in a valid state\n", __func__, actor->formID);
     return false;
 }
 
@@ -84,15 +111,21 @@ bool actorUtils::IsBoneInWhitelist(Actor* actor, std::string boneName) {
         logger.Info("IsBoneInWhitelist: actor is not valid.\n");
         return false;
     }
-
+    bool result;
     auto raceEID = actorUtils::GetActorRaceEID(actor);
     if (whitelist.find(boneName) != whitelist.end()) {
         auto racesMap = whitelist.at(boneName);
         if (racesMap.find(raceEID) != racesMap.end()) {
-            if (IsActorMale(actor))
-                return racesMap.at(raceEID).male;
-            else
-                return racesMap.at(raceEID).female;
+            if (IsActorMale(actor)) {
+                result = racesMap.at(raceEID).male;
+                //logger.Info("%s: %s male is %d for actor %x.\n", __func__, boneName.c_str(), result,  actor->formID);
+                return result;
+            }
+            else {
+                result = racesMap.at(raceEID).female;
+                //logger.Info("%s: %s female is %d for actor %x.\n", __func__, boneName.c_str(), result, actor->formID);
+                return result;
+            }
         }
     }
     return false;
@@ -127,8 +160,26 @@ const actorUtils::EquippedArmor actorUtils::GetActorEquippedArmor(Actor* actor, 
 }
 
 config_t actorUtils::BuildConfigForActor(Actor* actor) {
-    config_t baseConfig = config;
+    std::multiset<UInt64> key;
+    for (auto slot : usedSlots) {
+        UInt64 data = 0;
+        auto equipped = actorUtils::GetActorEquippedArmor(actor, slot);
+        if (equipped.armor) {
+            data |= equipped.armor->formID;
+            data = data << 32;
+        }
+        if (equipped.model) {
+            data |= equipped.model->formID;
+        }
+        key.emplace(data);
+    }
 
+    auto found = cachedConfigs.find(key);
+    if (found != cachedConfigs.end()) {
+        return found->second;
+    }
+
+    config_t baseConfig = config;
     for (auto overrideConfigIter = configArmorOverrideMap.rbegin(); overrideConfigIter != configArmorOverrideMap.rend(); ++overrideConfigIter) {
         auto data = overrideConfigIter->second;
 
@@ -145,7 +196,7 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
             bool breakOutside = false;
             for (auto equipped : equippedList) {
                 if (*armorFormID == equipped.armor->formID || *armorFormID == equipped.model->formID) {
-                    if (data.isWhitelist) {
+                    if (data.isFilterInverted) {
                         for (auto val : data.config) {
                             if (data.config[val.first].empty()) {
                                 baseConfig.erase(val.first);
@@ -166,7 +217,7 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
             }
         }
 
-        if (!data.isWhitelist && armorFormID == data.armors.end()) {
+        if (!data.isFilterInverted && armorFormID == data.armors.end() && !equippedList.empty()) {
             for (auto val : data.config) {
                 if (data.config[val.first].empty()) {
                     baseConfig.erase(val.first);
@@ -178,5 +229,6 @@ config_t actorUtils::BuildConfigForActor(Actor* actor) {
         }
     }
 
+    cachedConfigs[key] = baseConfig;
     return baseConfig;
 }

@@ -27,8 +27,9 @@ bool npcOnly = false;
 bool useWhitelist = false;
 
 config_t config;
-config_t configArmor;
 std::map<UInt32, armorOverrideData> configArmorOverrideMap;
+std::unordered_set<UInt32> usedSlots;
+std::map<std::multiset<UInt64>, config_t> cachedConfigs;
 
 // TODO data structure these
 whitelist_t whitelist;
@@ -100,6 +101,8 @@ bool LoadConfig() {
     boneNames.clear();
     config.clear();
     configArmorOverrideMap.clear();
+    usedSlots.clear();
+    cachedConfigs.clear();
 
     // Note: Using INIReader results in a slight double read
     INIReader configReader("Data\\F4SE\\Plugins\\ocbp.ini");
@@ -132,6 +135,35 @@ bool LoadConfig() {
 
     // Read sections
     auto sections = configReader.Sections();
+    auto prioritySection = sections.find("Priority");
+    bool detectArmorCompat = configReader.GetBoolean("General", "detectArmor", false) && (prioritySection == sections.end() || configReader.Section(*prioritySection).empty());
+
+    // Backwards compatibility for detectArmor style method
+    if (detectArmorCompat) {
+        priorityNameMappings["A"] = 0;
+        configArmorOverrideMap[0].slots.emplace(11);
+        usedSlots.emplace(11);
+        configArmorOverrideMap[0].isFilterInverted = false;
+
+        //Read armorIgnore
+        auto armorIgnoreStr = configReader.Get("General", "armorIgnore", "");
+        {
+            size_t commaPos;
+            do {
+                commaPos = armorIgnoreStr.find_first_of(",");
+                auto token = armorIgnoreStr.substr(0, commaPos);
+
+                try {
+                    UInt32 formID = std::stoul(token);
+                    configArmorOverrideMap[0].armors.emplace(formID);
+                }
+                catch (const std::exception&) {}
+
+                armorIgnoreStr = armorIgnoreStr.substr(commaPos + 1);
+            } while (commaPos != -1);
+        }
+    }
+
     for (auto sectionsIter = sections.begin(); sectionsIter != sections.end(); ++sectionsIter) {
 
         // Split for override section check
@@ -243,15 +275,16 @@ bool LoadConfig() {
                 }
 
                 configArmorOverrideMap[armorPriority].slots.emplace(slot - 30);
+                usedSlots.emplace(slot - 30);
             } while (commaPos != std::string::npos);
 
-            configArmorOverrideMap[armorPriority].isWhitelist = configReader.GetBoolean(*sectionsIter, "whitelist", false);
+            configArmorOverrideMap[armorPriority].isFilterInverted = configReader.GetBoolean(*sectionsIter, "invertFilter", false);
 
             // Get section contents
             auto sectionMap = configReader.Section(*sectionsIter);
             for (auto& valuesIter : sectionMap) {
                 auto& key = valuesIter.first;
-                if (key == "whitelist" || key == "slots") {
+                if (key == "invertFilter" || key == "slots") {
                     continue;
                 }
 
@@ -366,6 +399,15 @@ bool LoadConfig() {
     // Remove duplicate entries
     bonesSet = std::set<std::string>(boneNames.begin(), boneNames.end());
     boneNames.assign(bonesSet.begin(), bonesSet.end());
+
+    // "Delete" bones specified in [Attach] but not [Attach.A] from the latter for compatibility with presets that remove breast bone jiggle when chest armor equipped
+    if (detectArmorCompat) {
+        for (auto boneName : boneNames) {
+            if (configArmorOverrideMap[0].config.find(boneName) == configArmorOverrideMap[0].config.end()) {
+                configArmorOverrideMap[0].config[boneName];
+            }
+        }
+    }
 
     logger.Error("Finished CBP Config\n");
     return reloadActors;
