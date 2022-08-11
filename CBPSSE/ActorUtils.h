@@ -9,10 +9,12 @@ namespace actorUtils {
     };
     
     std::string GetActorRaceEID(Actor* actor);
+    NiAVObject* GetBaseSkeleton(Actor* actor);
     bool IsActorInPowerArmor(Actor* actor);
     bool IsActorMale(Actor* actor);
     bool IsActorTrackable(Actor* actor);
     bool IsActorValid(Actor* actor);
+    bool IsBoneValid(Actor* actor, BSFixedString* boneName);
     bool IsBoneInWhitelist(Actor* actor, std::string boneName);
 
     const EquippedArmor GetActorEquippedArmor(Actor* actor, UInt32 slot);

@@ -46,6 +46,7 @@ using actorUtils::IsActorMale;
 using actorUtils::IsActorTrackable;
 using actorUtils::IsActorValid;
 using actorUtils::BuildConfigForActor;
+using actorUtils::GetActorRaceEID;
 
 extern F4SETaskInterface *g_task;
 
@@ -108,7 +109,7 @@ inline void safe_delete(T*& in) {
 
 
 
-std::unordered_map<UInt32, SimObj> actors;
+std::unordered_map<UInt32, SimObj> actors;  // Map of Actor (stored as form ID) to its Simulation Object
 TESObjectCELL *curCell = nullptr;
 
 
@@ -190,7 +191,8 @@ void UpdateActors() {
                 //logger.error("Sim Object not found in tracked actors\n");
             }
             else {
-                objIterator->second.UpdateConfig(a.actor, boneNames, config);
+                objIterator->second.AddBonesToThings(a.actor, boneNames);
+                objIterator->second.UpdateConfig(config);
             }
         }
 
@@ -211,8 +213,21 @@ void UpdateActors() {
             config_t composedConfig = BuildConfigForActor(a.actor);
             
             auto &simObj = objIterator->second;
+
+
+            SimObj::Gender gender = IsActorMale(a.actor) ? SimObj::Gender::Male : SimObj::Gender::Female;
+
+            // Pointer comparison is good enough?
+            // OR check if gender and/or race have changed
             if (simObj.IsBound()) {
-                simObj.UpdateConfig(a.actor, boneNames, composedConfig);
+                if (gender != simObj.GetGender() ||
+                    GetActorRaceEID(a.actor) != simObj.GetRaceEID()) {
+                    logger.Info("%s: Reset sim object\n", __func__);
+                    simObj.Reset();
+                }
+            }
+
+            if (simObj.IsBound()) {
                 simObj.Update(a.actor);
             }
             else {
