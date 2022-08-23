@@ -1,13 +1,13 @@
 #pragma once
 #include <stdio.h>
 
-class Logger {
+class CbpLogger {
 public:
-	Logger(const char* fname);
-	void info(const char* args...);	
-	void error(const char* args...);
+    CbpLogger(const char* fname);
+    void Info(const char* args...);	
+    void Error(const char* args...);
 
-	FILE *handle;
+    FILE *handle;
 };
 
-extern Logger logger;
+extern CbpLogger logger;

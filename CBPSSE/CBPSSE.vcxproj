@@ -22,8 +22,8 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{49438A48-1C92-4D07-97C0-BDF0744386F9}</ProjectGuid>
     <RootNamespace>CBBPSSE</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
-    <ProjectName>CBPSSE</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <ProjectName>OpenCBP_FO4</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -72,14 +72,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetExt>.dll</TargetExt>
-    <OutDir>D:\SteamLibrary\steamapps\common\Skyrim Special Edition\Data\SKSE\Plugins</OutDir>
     <TargetName>cbp</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetExt>.dll</TargetExt>
-    <OutDir>D:\SteamLibrary\steamapps\common\Skyrim Special Edition\Data\SKSE\Plugins</OutDir>
     <TargetName>cbp</TargetName>
     <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>$(ProjectDir)x64_v141\Release\;$(OutDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,8 +97,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>
       </SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\skse64\src\;$(SolutionDir)\skse64\src\skse64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_USRDLL;PLUGIN_EXAMPLE_EXPORTS;RUNTIME;RUNTIME_VERSION=0x01050610;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)f4se;$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_USRDLL;PLUGIN_EXAMPLE_EXPORTS;RUNTIME;RUNTIME_VERSION=0x010A0A30;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>common/IPrefix.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -131,8 +131,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\skse64\src\;$(SolutionDir)\skse64\src\skse64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_USRDLL;PLUGIN_EXAMPLE_EXPORTS;RUNTIME;RUNTIME_VERSION=0x01050610;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)f4se;$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_USRDLL;PLUGIN_EXAMPLE_EXPORTS;RUNTIME;RUNTIME_VERSION=0x010A0A30;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ForcedIncludeFiles>common/IPrefix.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
@@ -140,20 +140,39 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(OutDir)f4se_1_10_163.lib;$(OutDir)f4se_common.lib;$(SolutionDir)x64_v141\Release\common_vc14.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(TargetPath)" "$(Fallout4Path)\$(TargetFileName)"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Installing DLL to FO4 Plugins...</Message>
+    </PostBuildEvent>
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\detourxs-master\detourxs.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\GameAPI.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\GameForms.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\GameRTTI.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\GameTypes.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\NiNodes.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\NiObjects.h" />
-    <ClInclude Include="..\skse64\src\skse64\skse64\NiTypes.h" />
+    <ClInclude Include="..\f4se\f4se\GameAPI.h" />
+    <ClInclude Include="..\f4se\f4se\GameExtraData.h" />
+    <ClInclude Include="..\f4se\f4se\GameForms.h" />
+    <ClInclude Include="..\f4se\f4se\GameRTTI.h" />
+    <ClInclude Include="..\f4se\f4se\GameTypes.h" />
+    <ClInclude Include="..\f4se\f4se\GameUtilities.h" />
+    <ClInclude Include="..\f4se\f4se\NiNodes.h" />
+    <ClInclude Include="..\f4se\f4se\NiObjects.h" />
+    <ClInclude Include="..\f4se\f4se\NiTypes.h" />
+    <ClInclude Include="..\f4se\f4se\PapyrusArgs.h" />
+    <ClInclude Include="..\f4se\f4se\PapyrusInterfaces.h" />
+    <ClInclude Include="..\f4se\f4se\PapyrusNativeFunctions.h" />
+    <ClInclude Include="..\f4se\f4se\PapyrusValue.h" />
+    <ClInclude Include="..\f4se\f4se\PapyrusVM.h" />
+    <ClInclude Include="ActorEntry.h" />
+    <ClInclude Include="ActorUtils.h" />
+    <ClInclude Include="INIReader.h" />
+    <ClInclude Include="PapyrusOCBP.h" />
     <ClInclude Include="SimObj.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="log.h" />
@@ -161,13 +180,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\detourxs-master\detourxs.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\GameAPI.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\GameForms.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\GameRTTI.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\GameTypes.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\NiNodes.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\NiObjects.cpp" />
-    <ClCompile Include="..\skse64\src\skse64\skse64\NiTypes.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameAPI.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameExtraData.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameForms.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameRTTI.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameTypes.cpp" />
+    <ClCompile Include="..\f4se\f4se\GameUtilities.cpp" />
+    <ClCompile Include="..\f4se\f4se\NiNodes.cpp" />
+    <ClCompile Include="..\f4se\f4se\NiObjects.cpp" />
+    <ClCompile Include="..\f4se\f4se\NiTypes.cpp" />
+    <ClCompile Include="..\f4se\f4se\PapyrusArgs.cpp" />
+    <ClCompile Include="..\f4se\f4se\PapyrusInterfaces.cpp" />
+    <ClCompile Include="..\f4se\f4se\PapyrusNativeFunctions.cpp" />
+    <ClCompile Include="..\f4se\f4se\PapyrusValue.cpp" />
+    <ClCompile Include="..\f4se\f4se\PapyrusVM.cpp" />
+    <ClCompile Include="ActorUtils.cpp" />
+    <ClCompile Include="PapyrusOCBP.cpp" />
     <ClCompile Include="SimObj.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="hookD3D.cpp" />
@@ -177,12 +205,21 @@
     <ClCompile Include="Thing.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\skse64\src\skse64\skse64\GameRTTI.inl" />
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\skse64\src\skse64\skse64_common\skse64_common.vcxproj">
-      <Project>{5fd1c08d-db80-480c-a1c6-f0920005cd13}</Project>
+    <ProjectReference Include="..\common\common_vc14.vcxproj">
+      <Project>{472e19ab-def0-42df-819b-18722e8dc822}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\f4se\f4se\f4se.vcxproj">
+      <Project>{a236f69d-8ff9-4491-ac5f-45bf49448bbe}</Project>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\f4se\f4se_common\f4se_common.vcxproj">
+      <Project>{20c6411c-596f-4b85-be4e-8bc91f59d8a6}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

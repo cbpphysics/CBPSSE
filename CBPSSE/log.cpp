@@ -3,14 +3,20 @@
 
 #pragma warning(disable : 4996)
 
-Logger::Logger(const char *fname) {
+// TODO make better macro
+//#define LOG_ON
+
+CbpLogger::CbpLogger(const char *fname) {
+#ifdef LOG_ON
 	handle = fopen(fname, "a");
 	if (handle) {
 		fprintf(handle, "CBP Log initialized\n");
 	}
+#endif
 }
 
-void Logger::info(const char *fmt...) {
+void CbpLogger::Info(const char *fmt...) {
+#ifdef LOG_ON
 	if (handle) {
 		va_list argptr;
 		va_start(argptr, fmt);
@@ -18,9 +24,11 @@ void Logger::info(const char *fmt...) {
 		va_end(argptr);
 		fflush(handle);
 	}
+#endif
 }
 
-void Logger::error(const char *fmt...) {
+void CbpLogger::Error(const char *fmt...) {
+#ifdef LOG_ON
 	if (handle) {
 		va_list argptr;
 		va_start(argptr, fmt);
@@ -28,6 +36,7 @@ void Logger::error(const char *fmt...) {
 		va_end(argptr);
 		fflush(handle);
 	}
+#endif
 }
 
-Logger logger("Data\\SKSE\\Plugins\\cbp.log");
+CbpLogger logger("Data\\F4SE\\Plugins\\cbp.log");

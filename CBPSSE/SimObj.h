@@ -2,30 +2,37 @@
 
 #include <unordered_map>
 #include <vector>
-#include "skse64/GameReferences.h"
+#include "f4se/GameReferences.h"
 #include "Thing.h"
 #include "config.h"
 
 class SimObj {
-	UInt32 id = 0;
-	bool bound = false;
-public:
-	std::unordered_map<const char *, Thing> things;
-	SimObj(Actor *actor, config_t &config);
-	SimObj() {}
-	~SimObj();
-	bool bind(Actor *actor, std::vector<const char *> &boneNames, config_t &config);
-	bool actorValid(Actor *actor);
-	void update(Actor *actor);
-	bool updateConfig(config_t &config);
-	bool isBound() { return bound; }
 
+public:
+    enum class Gender
+    {
+        Male,
+        Female,
+        Unassigned
+    };
+
+    std::unordered_map<std::string, Thing> things;
+    SimObj(Actor *actor, config_t &config);
+    SimObj() {}
+    ~SimObj();
+    bool AddBonesToThings(Actor* actor, std::vector<std::string>& boneNames);
+    bool Bind(Actor *actor, std::vector<std::string> &boneNames, config_t &config);
+    Gender GetGender();
+    std::string GetRaceEID();
+    void Reset();
+    void Update(Actor *actor);
+    bool UpdateConfig(config_t& config);
+    bool IsBound() { return bound; }
+private:
+    UInt32 id = 0;
+    bool bound = false;
+    Gender gender;
+    std::string raceEid;
 };
 
-
-extern std::vector<const char *> femaleBones;
-extern const char *leftBreastName;
-extern const char *rightBreastName;
-extern const char *leftButtName;
-extern const char *rightButtName;
-extern const char *bellyName;
+extern std::vector<std::string> boneNames;
